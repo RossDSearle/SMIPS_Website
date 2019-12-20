@@ -1,0 +1,24 @@
+Name,Property,Units
+Air Temperature,air_temperature,Deg Celsius          
+Evaporation,changeme_evaporation,mm      
+Soil Temperature,changeme_soil_temperature,Deg Celsius
+Solar,changeme_solar,Unknown           
+Depth,depth,metres                    
+Dew Point Temperature,dew_point_temperature,Deg Celsius    
+Evapotranspiration,evapotranspiration,mm        
+Rain,rain,mm                      
+Relative Humidity,relativehumidity,percent          
+Soil Moisture,soil_moisture,percent
+Wind Direction,wind_direction,Degrees            
+Wind Speed,wind_speed,kmperhr      
+Evsp,changeme_evsp,mm
+Evap FAO 56,changeme_fao56,mm                
+Evap Morton Actual,changeme_morton_actual,mm         
+Evap Morton Lake,changeme_morton_lake,mm           
+Evap Morton Potential,changeme_morton_potential,mm      
+Evap Morton Wet,changeme_morton_wet,mm           
+Evap Mslpres,changeme_mslpres,mm
+Solar 2,changeme_solar,mm              
+Solar Pan Evaporation,changeme_solar_pan_evaporation,mm
+Solar Radiation,changeme_solar_radiation,mm      
+Vapour Pressure,changeme_vapour_pressure,mm 

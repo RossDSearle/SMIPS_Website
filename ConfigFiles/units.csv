@@ -1,0 +1,13 @@
+Name,Property,Units,AggType,AggTypeHref
+Air Temperature Maximum,Air Temperature_Maximum,Deg Celsius          ,Continuous,AveragePrec
+Air Temperature Minimum,Air Temperature_Minimum,Deg Celsius          ,Continuous,AveragePrec
+Evaporation,Evaporation_Continuous,mm      ,Continuous,AveragePrec
+Soil Temperature,Soil Temperature_Continuous,Deg Celsius,Continuous,AveragePrec
+Dew Point Temperature,Dew Point Temperature_Average,Deg Celsius    ,Average,AveragePrec
+Evapotranspiration,Evaporation_Continuous,mm        ,Continuous,AveragePrec
+Rainfall,Rainfall_Continuous,mm                      ,Total,TotalPrec
+Relative Humidity,Relative Humidity_Average,percent          ,Continuous,AveragePrec
+Soil Moisture,Soil Moisture_Continuous,percent,Continuous,AveragePrec
+Wind Direction,Wind Direction_Average,Degrees            ,Average,AveragePrec
+Wind Speed,Wind Speed_Continuous,kmperhr      ,Continuous,AveragePrec
+Vapour Pressure,Vapour Pressure_Continuous,mm ,Continuous,AveragePrec

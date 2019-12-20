@@ -1,0 +1,6 @@
+usr,pwd,access
+Public,Public,All
+Researcher,a,All
+BOM,b,RAIN;Econnect;cerdi.sfs
+CSIRO,c,Econnect
+Admin,Ross, All

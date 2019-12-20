@@ -1,0 +1,7 @@
+Name,Organisation,ProductOrder,ProductCode,Units,Property,Description
+Soil Moisture Index - CSIRO,CSIRO,1,Wetness-Index,Proportion,Soil-Moisture,This is the SMIPS Soil Moisture Index product
+Volumetric Soil Moisture - CSIRO,CSIRO,2,Volumetric-Moisture,Millimeter,Soil-Moisture,This is the SMIPS Volumetric Soil Moisture product
+Blended Rainfall - CSIRO,CSIRO,3,BlendedRainfall,Millimeter,Rainfall,This is the SMIPS Blended Rainfall product
+Soil Moisture - BoM,BOM,4,sm_pct,Percent,Soil-Moisture,Bom soil moisture in the top 90 cm
+Surface Soil Moisture - Bom,BOM,5,s0_pct,Percent,Soil-Moisture,Bom surface soil moisture
+Soil Moisture - ANU,ANU,6,Ssoil,Millimeter,Soil-Moisture,ANU soil moisture in the top 200 cm
