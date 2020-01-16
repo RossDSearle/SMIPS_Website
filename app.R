@@ -343,6 +343,7 @@ server <- function(input, output,session) {
         
         if(org == 'CSIRO'){
           wmsurl <- paste0(wmsServer, '.nc?TIME=', mDate, 'T00:00:00.000Z&numcolorbands=9&colorscalerange=0,1&belowmincolor=transparent&abovemaxcolor=extend')
+         
           
         }else if(org == 'BoM'){
           wmsurl <- paste0(wmsServer, '/', prod, '_', wmsyear, '.nc?time=', mDate)
@@ -351,6 +352,8 @@ server <- function(input, output,session) {
           #http://dapds00.nci.org.au/thredds/wms/ub8/au/OzWALD/daily/OzWALD.daily.Ssoil.2018.nc?&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&layers=Ssoil&CRS=CRS:84&bbox=112.0,-44,154.0,-10.0&format=image/png&time=2018-06-13T00:00:00.000Z&styles=&TRANSPARENT=true&width=400&height=300&style=boxfill/anu_wald_darkblues&transparent=true
           wmsurl <- paste0(wmsServer, '/OzWALD.daily.', prod, '.', wmsyear, '.nc?time=', mDate, 'T00:00:00.000Z&numcolorbands=9&colorscalerange=0,1800&belowmincolor=transparent&abovemaxcolor=extend')
         }
+        
+        print(wmsurl)
         proxy %>% addWMSTiles(wmsurl, group= "Moisture Maps",
                   layers = prod,
                   options = WMSTileOptions(format = "image/png", transparent = T, opacity = trans,  styles = wmsStyle, version = wmsVersion),
@@ -392,36 +395,36 @@ server <- function(input, output,session) {
   # })
   
   
-  output$wmsLegend <- renderImage({
-    if(input$ProductType != 'None'){
+  # output$wmsLegend <- renderImage({
+  #   if(input$ProductType != 'None'){
       
-      # rec <- productsDF[productsDF$Name==input$ProductType,][1,]
-      #  org <- rec$Organisation
-      #  prod <- rec$ProductCode
-      #  cproduct <- paste0(org, '_', prod)
-      # legendurl <- paste0(deployDir, '/www/Legends/','CSIRO_Volumetric-Moisture', '_Legend.png')
-      
-      legendurl <- 'http://esoil.io/thredds/wms/SMIPSall/SMIPSv0.5.nc?VERSION=1.3.0&SERVICE=WMS&REQUEST=GetLegendGraphic&LAYER=Openloop_Wetness_Index&FORMAT=image%2Fpng&styles=boxfill/alg2'
-      
-      tf <- tempfile(fileext = '.png')
-      download.file(legendurl, destfile = 'c:/temp/aaaaaaaaaa.png', mode = 'wb')
-      # legendurl <- 'http://dapds00.nci.org.au/thredds/wms/ub8/au/OzWALD/daily/OzWALD.daily.Ssoil.2017.nc?REQUEST=GetLegendGraphic&LAYER=Ssoil&PALETTE=nrm_temperature_reverse'
-      
-      return(list(
-        # src = "/srv/shiny-server/SMIPS/www/Legends/CSIRO_Wetness-Index_Legend.png",
-        src = 'c:/temp/aaaaaaaaaa.png',
-        filetype = "image/png",
-        alt = "Legend for the currently displayed map" ))
-    }
-    else{
-      return(list(
-        #src = "/srv/shiny-server/SMIPS/www/Legends/CSIRO_Wetness-Index_Legend.png",
-        src = "",
-        filetype = "image/png",
-        alt = "" ))
-    }
-    
-  }, deleteFile = FALSE)
+    #   # rec <- productsDF[productsDF$Name==input$ProductType,][1,]
+    #   #  org <- rec$Organisation
+    #   #  prod <- rec$ProductCode
+    #   #  cproduct <- paste0(org, '_', prod)
+    #   # legendurl <- paste0(deployDir, '/www/Legends/','CSIRO_Volumetric-Moisture', '_Legend.png')
+    #   
+    #   legendurl <- 'http://esoil.io/thredds/wms/SMIPSall/SMIPSv0.5.nc?VERSION=1.3.0&SERVICE=WMS&REQUEST=GetLegendGraphic&LAYER=Openloop_Wetness_Index&FORMAT=image%2Fpng&styles=boxfill/alg2'
+    #   
+    #   tf <- tempfile(fileext = '.png')
+    #   download.file(legendurl, destfile = 'c:/temp/aaaaaaaaaa.png', mode = 'wb')
+    #   # legendurl <- 'http://dapds00.nci.org.au/thredds/wms/ub8/au/OzWALD/daily/OzWALD.daily.Ssoil.2017.nc?REQUEST=GetLegendGraphic&LAYER=Ssoil&PALETTE=nrm_temperature_reverse'
+    #   
+    #   return(list(
+    #     # src = "/srv/shiny-server/SMIPS/www/Legends/CSIRO_Wetness-Index_Legend.png",
+    #     src = 'c:/temp/aaaaaaaaaa.png',
+    #     filetype = "image/png",
+    #     alt = "Legend for the currently displayed map" ))
+    # }
+    # else{
+    #   return(list(
+    #     #src = "/srv/shiny-server/SMIPS/www/Legends/CSIRO_Wetness-Index_Legend.png",
+    #     src = "",
+    #     filetype = "image/png",
+    #     alt = "" ))
+  #    }
+  #   
+  # }, deleteFile = FALSE)
 
   
 
