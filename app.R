@@ -991,7 +991,7 @@ left: 70px;
      fluidPage(fluidRow(
       #HTML("<p><img src='csiroLogo.png'> &nbsp;&nbsp;&nbsp;&nbsp;National Soil Moisture Information Products - PROTOTYPE ONLY</p>") 
        tags$img(src = 'Logos/TERN.png', width = '100px', height = '100px'), 
-       tags$img(src = 'Logos/csiro.jpg', width = '100px', height = '60px'), 
+       tags$img(src = 'Logos/CSIRO.jpg', width = '100px', height = '60px'), 
        HTML("National Soil Moisture Information Products - PROTOTYPE")
      ))),
                      tabsetPanel(
