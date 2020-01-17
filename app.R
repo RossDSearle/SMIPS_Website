@@ -30,7 +30,7 @@ product <- 'Openloop_Volumetric_SM'
 machineName <- as.character(Sys.info()['nodename'])
 if(machineName=='soils-discovery'){
   
-  deployDir <<-'/srv/shiny-server/SMIPS_Website'
+  deployDir <<-'/srv/shiny-server/SMIPS'
 }else{
   deployDir <<-'C:/Users/sea084/Dropbox/RossRCode/Git/Shiny/SMIPS_Website'
 }
