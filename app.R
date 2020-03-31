@@ -1,5 +1,6 @@
 library(raster)
 library(stringr)
+library(shiny)
 library(leaflet)
 #library(leaflet.extras)
 #library(htmltidy)
@@ -24,14 +25,14 @@ library(lubridate)
 library(raster)
 library(httr)
 
-
 product <- 'Openloop_Volumetric_SM'
 
 machineName <- as.character(Sys.info()['nodename'])
 if(machineName=='soils-discovery'){
-  
   deployDir <<-'/srv/shiny-server/SMIPS'
-}else{
+} else if (machineName=="lw-94-cdc"){
+  deployDir <<- "/home/som05d/CODE/SMIPS_Website"
+} else{
   deployDir <<-'C:/Users/sea084/Dropbox/RossRCode/Git/Shiny/SMIPS_Website'
 }
 
