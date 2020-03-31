@@ -315,7 +315,7 @@ server <- function(input, output,session) {
     org <- rec$Organisation
     prod <- rec$ProductCode
     wmsServer <- rec$Server
-    wmsStyle <- rec$wmsStyle
+    #wmsStyle <- rec$wmsStyle
     wmsVersion <- rec$wmsVersion
     attrib <- rec$Attribution
     
@@ -357,8 +357,10 @@ server <- function(input, output,session) {
         print(wmsurl)
         proxy %>% addWMSTiles(wmsurl, group= "Moisture Maps",
                   layers = prod,
-                  options = WMSTileOptions(format = "image/png", transparent = T, opacity = trans,  styles = wmsStyle, version = wmsVersion),
+                  #options = WMSTileOptions(format = "image/png", transparent = T, opacity = trans,  styles = wmsStyle, version = wmsVersion),
+                  options = WMSTileOptions(format = "image/png", transparent = T, opacity = trans, version = wmsVersion),
                   attribution = attrib)
+
       }else{
         
         url <- paste0(SMIPSAPIServer, '/RasterWindow?bbox=',max(bds$west, Ausminx),'%3B', min(bds$east, Ausmaxx),'%3B', max(bds$south, Ausminy),'%3B', min(bds$north, Ausmaxy) ,'&date=', dt, '&rows=',wmsnumrows,'&cols=', wmsnumcols)
