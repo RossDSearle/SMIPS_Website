@@ -13,27 +13,6 @@ Logit <- function(action, url){
   return(logInfo)
 }
 
-
-headerPanel2 <- function(title, windowTitle=title) {    
-  tagList(
-    tags$link(rel = "stylesheet", type = "text/css", href = "styles/cerulean"),
-    tags$head(tags$title(windowTitle)),
-    #style=background-color:powderblue;  font-size: 10px;
-    div(
-      class="span12", style="padding: 0px 0px; font-size: 10px; font-color:red .selectize-label { font-size: 10px; line-height: 10px;} ",
-        h1(title)
-        # fluidRow(
-        #   column(4, HTML('')),
-        #   column(2, selectInput("SelectedStreamType", "Sensor Type", sensorTypes, selected = defaultSensor, width= 200)),
-        #   #column(2, selectInput("AggregationType", "Timestep", timeSteps[1,], selected = 'days', width= 120)),
-        #   column(2, dateRangeInput('moistureDateRange',label = 'Date range : yyyy-mm-dd',start =  as.Date('2017-05-27'), end = as.Date('2017-06-29')))
-        #   
-        #   #absolutePanel(top=20, left=70, textInput("target_zone", "" , "Ex: Bamako"))
-        # )
-    )
-  )
-}
-
 includeHTML2 <- function (path) {
   lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
   # lines2 <-paste(lines, collapse = "\\r\\n")
