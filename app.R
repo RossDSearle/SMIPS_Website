@@ -344,7 +344,7 @@ server <- function(input, output,session) {
         
         if(org == 'CSIRO'){
           wmsurl <- paste0(wmsServer, '.nc?TIME=', mDate, 'T00:00:00.000Z&numcolorbands=9&colorscalerange=0,1&belowmincolor=transparent&abovemaxcolor=extend')
-         
+          wmsurl <- paste0(wmsServer, '.nc?TIME=', mDate, 'T00:00:00.000Z&belowmincolor=transparent')
           
         }else if(org == 'BoM'){
           wmsurl <- paste0(wmsServer, '/', prod, '_', wmsyear, '.nc?time=', mDate)
