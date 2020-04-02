@@ -80,7 +80,7 @@ server <- function(input, output,session) {
                 textInput("usrID", "User Name", placeholder = 'Public'),
                 passwordInput("usrPwd", "Password", placeholder = 'Public'),
                 HTML(paste0('For Information about obtaining a login contact <a href=mailto:', adminEmail, '?Subject=SMIPS&nbsp;Access>', adminName, '</a>')), 
-                tags$a(href=paste0("mailto:", adminEmail, "?Subject=Hello%20again", adminName)),
+                tags$a(href=paste0("mailto:", adminEmail, "?Subject=SMIPS%20access%20Request%20", adminName)),
                 if (failed)
                   div(tags$b("Login failed", style = "color: red;")),
                 
@@ -195,7 +195,7 @@ server <- function(input, output,session) {
             
             
           ) %>%
-          
+
           addControlGPS(options = gpsOptions(setView=T, autoCenter=T, maxZoom=10)) %>%
 
           addLayersControl(
@@ -431,7 +431,9 @@ server <- function(input, output,session) {
 
   
   ################## Render the Chart from a map drill  ##################
-  output$mositureChart1 <- renderDygraph({
+  output$dummyDygraph <- renderDygraph({})
+  output$moisitureChart1 <- renderDygraph({
+
 
     if(!is.null(RV$currentTS)){
       
@@ -439,7 +441,7 @@ server <- function(input, output,session) {
 
         maxVal <- max(RV$currentTS)
      
-        dygraph(RV$currentTS ,  main = paste0(RV$currentSiteInfo$DataType, '  (',RV$currentSiteInfo$Units, ') - ', RV$currentSiteInfo$SiteName, ' - ', RV$currentSiteInfo$Owner ), ylab =  RV$currentSiteInfo$DataType)%>%
+        dygraph(RV$currentTS ,  main = paste0(RV$currentSiteInfo$DataType, '  (',RV$currentSiteInfo$Units, ') - ', RV$currentSiteInfo$SiteName, ' - ', RV$currentSiteInfo$Owner ), ylab =  RV$currentSiteInfo$DataType) %>%
         #dySeries('Values', label = RV$currentSiteInfo$DataType) %>%
         dyAxis("y", label = RV$currentSiteInfo$DataType, valueRange = c(0, maxVal)) %>%
         dyOptions(axisLineWidth = 1.5, fillGraph = F, drawGrid = T, titleHeight = 26) %>%
@@ -448,8 +450,8 @@ server <- function(input, output,session) {
       })
     }
   })
-  
-  ################## Render the Info Table from a map drill  ##################
+  output$showDyGraph <- reactive({ifelse(is.null(RV$currentTS), "false", "true")})
+    ################## Render the Info Table from a map drill  ##################
   output$SensorDrillInfoTable = renderRHandsontable({
     
     req(RV$currentSiteInfo)
@@ -911,9 +913,9 @@ server <- function(input, output,session) {
     minDateShiny <- input$moistureDateRange[[1]][1]
     maxDateShiny  <- input$moistureDateRange[[2]][1]
     sd <- str_split(minDateShiny, '-')
-    isoSDate = paste0(sd[[1]][1], '-', sd[[1]][2], '-', sd[[1]][3], 'T00:00:00')
+    isoSDate <- paste0(sd[[1]][1], '-', sd[[1]][2], '-', sd[[1]][3], 'T00:00:00')
     ed <- str_split(maxDateShiny, '-')
-    isoEDate = paste0(ed[[1]][1], '-', ed[[1]][2], '-', ed[[1]][3], 'T23:59:59')
+    isoEDate <- paste0(ed[[1]][1], '-', ed[[1]][2], '-', ed[[1]][3], 'T23:59:59')
     
     url <- paste0(sensorFederation_Server, "/getSensorDataStreams?siteid=", sid,"&sensortype=", DataType,"&startdate=", isoSDate, '&enddate=', isoEDate, "&aggperiod=days")
     stnsRaw <- getURL(paste0(url))
@@ -960,8 +962,8 @@ server <- function(input, output,session) {
 }
 
 
-ui <- navbarPage(windowTitle = 'National Soil Moisture Info', theme = 'bootstrap.css', fluid = TRUE, inverse = TRUE,
-                 title = HTML('<a href="#" class="navbar-left"><img src="Logos/CSIRO-logo-inverted.svg" width="60px" height="60px"></a><span>&nbsp;&nbsp;National Soil Moisture Info</span>'),
+ui <- navbarPage(windowTitle = 'National Soil Moisture Info', theme = 'bootstrap.css', fluid = FALSE, inverse = TRUE,
+                 title = HTML('<span>&nbsp;&nbsp;National Soil Moisture Info</span><a href="#" class="navbar-left">&nbsp;<img src="Logos/CSIRO-logo-inverted.svg" width="60" height="60"></a>&nbsp;&nbsp;<a href="#" class="navbar-left"><img src="Logos/tern1-inverted.png" height="65"></img></a>'),
                  header = tagList(
   tags$head( # Start <head>
     tags$link(rel = "stylesheet", type = "text/css", href = "Styles/csiro.css"),
@@ -980,30 +982,31 @@ left: 70px;
   # Start <body>
   # Header above panes (but below the nav)
 
-     div(class = 'container-fluid', fluidRow( column(12,
-      #HTML("<p><img src='csiroLogo.png'> &nbsp;&nbsp;&nbsp;&nbsp;National Soil Moisture Information Products - PROTOTYPE ONLY</p>") 
-       h1(
-      tags$img(src = 'Logos/TERN.png', width = '100px', height = '100px'),
-       tags$img(src = 'Logos/CSIRO.jpg', width = '100px', height = '60px'), 
-       HTML("National Soil Moisture Information Products - PROTOTYPE") )
-     )))), # End header taglist
+     # div(class = 'container-fluid', fluidRow( column(12,
+     #  #HTML("<p><img src='csiroLogo.png'> &nbsp;&nbsp;&nbsp;&nbsp;National Soil Moisture Information Products - PROTOTYPE ONLY</p>")
+     #   h1(
+     #  tags$img(src = 'Logos/TERN.png', width = '100px', height = '100px'),
+     #   tags$img(src = 'Logos/CSIRO.jpg', width = '100px', height = '60px'),
+     #   HTML("National Soil Moisture Information Products - PROTOTYPE") )
+     # )))
+                 ), # End header taglist
       # Start tab panel list:
                      tabPanel("Map View",
-                          sidebarLayout(fluid = TRUE,
+                          sidebarLayout(fluid = FALSE,
                             sidebarPanel(width = 3,
                               div(class = 'container-fluid',fluidRow(
 
-                                column(2, actionLink("show", "Login")), HTML(''),
+                                column(6, actionLink("show", "Login")), HTML(''),
                                 column(6, htmlOutput("loginStatus")), HTML('<br><br>')
 
                                 ),
 
-                                fluidRow(selectInput("ProductType", "Map Product Type ", c('None'), selected = defaultMap, width = 250)),
+                                fluidRow(selectInput("ProductType", "Map Product Type ", c('None'), selected = defaultMap, width = "100%")),
                               #  fluidRow( helpText("Select map date below"),
                                 fluidRow(dateInput('moistureMapDate', label = 'Map Date', format = 'dd-mm-yyyy', value = Sys.Date()-defaultDisplayDate, width = 130))),
 
                              # helpText("Use slider below to change map transparency"),
-                             fluidRow( sliderInput("moistureMapTrans", width= 150, label = "Map Transparency", min = 0,  max = 1, value = 1)),
+                             fluidRow( sliderInput("moistureMapTrans", width= 150, label = "Map Transparency", min = 0.0,  max = 1.0, value = 1.0)),
 
                             #  selectInput("SensorLabel", "Sensor Label ", sensorLabels, selected = 'SensorGroup', width= 120),
 
@@ -1031,12 +1034,10 @@ left: 70px;
 
 
                           ),
-                        mainPanel(
+                        mainPanel( width = 9,
 
 
-
-                      div(class = 'container-fluid',
-                      fluidRow(
+                      fluidRow( column(12,
 
                         tags$style(' .leaflet-bar button,
 .leaflet-bar button:hover {
@@ -1101,17 +1102,20 @@ cursor:crosshair;
 }'
                         ),
 
-                        div( htmlOutput("message1"), style=paste0('color:', 'green', '; width: 850px;'))),
+                        div( class = "panel panel-default", div(class = "panel-heading", HTML("Welcome")), div( class = "panel-body", htmlOutput("message1"), style=paste0('color:', 'green', '; width: 850px;')))
+                      )),
+
                       fluidRow(
-                        column(11, withSpinner( leafletOutput("moistureMap", width = "850", height = "650"))),
-
+                        column(12, withSpinner( leafletOutput("moistureMap", height = 650))),
                         absolutePanel(column(1, align="left",  imageOutput("wmsLegend")), left=870)) ,
-                      fluidRow( withSpinner( dygraphOutput("mositureChart1", width = "850", height = "300px"))),
-                      fluidRow( HTML("<BR><BR>")),
-                      fluidRow( rHandsontableOutput("SensorDrillInfoTable"))
-
-
+                      dygraphOutput("dummyDygraph", height = "0px"), #Dummy dygraph to ensure loading of dygraph libraries at boot time, even when none are shown
+                      div(style="visibility:hidden;",verbatimTextOutput("showDyGraph")), # Dummy invisible output of showDygraph to ensure its included in the conditional render
+                      conditionalPanel('output.showDyGraph == "true"',
+                        fluidRow( column(12, withSpinner( dygraphOutput("moisitureChart1", height = "350px")))),
+                        fluidRow( HTML("<BR><BR>")),
+                        fluidRow( column(12, rHandsontableOutput("SensorDrillInfoTable")))
                       )
+
 
            ))),
                   #  tabPanel("Sensor Site Data View",
@@ -1150,7 +1154,7 @@ cursor:crosshair;
                            # HTML("<h1>The SOil Moisture Information Processing System</h1>
                            #      <p></p>") 
                   ),
-                 footer = div(class = 'container-fluid footer',
+                 footer = div(class = 'footer',
                               hr(),
                    fluidRow( column(12,
                    HTML('<img src="Logos/TERN-NCRIS-digital-Primary.jpg" width="350"></img>')

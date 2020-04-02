@@ -25,8 +25,8 @@ defaultPwd <- 'Public'
 #defaultMap <- 'None'
 defaultMap <- 'CSIRO - SMIPS-Raw'
 
-#adminName <- 'Ross Searle'
-#adminEmail <- 'ross.searle@csiro.au'
+adminName <- 'Ross Searle'
+adminEmail <- 'ross.searle@csiro.au'
 
 defaultDisplayDate <- 4 # days before now
 maxMapDownloads <- 31
@@ -53,7 +53,6 @@ SMIPSAPIServer <- 'http://esoil.io/SMIPS_API/SMIPS'
 
 ######  CSIRO Thredds serve info  ########################
 CSIRO_OpenDAP_Server <- 'http://esoil.io/thredds/dodsC/SMIPS/SMIPSv0.5.nc'
-originDay = 42326
 originDate <- '20-11-2015'
 Ausminx <- 112.905
 Ausminy <-  -43.735

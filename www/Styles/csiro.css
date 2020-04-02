@@ -27,8 +27,11 @@
     vertical-align: middle;
     font-size: 1.3em;
 }
-.navbar-brand .navbar-left {
+.navbar-brand .navbar-left img {
+    display: inline;
     vertical-align: middle;
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
 body .navbar.navbar-inverse {
