@@ -1,5 +1,6 @@
 library(raster)
 library(stringr)
+library(shiny)
 library(leaflet)
 #library(leaflet.extras)
 #library(htmltidy)
@@ -24,22 +25,20 @@ library(lubridate)
 library(raster)
 library(httr)
 
-
 product <- 'Openloop_Volumetric_SM'
 
 machineName <- as.character(Sys.info()['nodename'])
-if(machineName=='soils-discovery'){
-  
+if (machineName=='soils-discovery') {
   deployDir <<-'/srv/shiny-server/SMIPS'
-}else{
+} else if (machineName=="lw-94-cdc") {
+  deployDir <<-'/home/som05d/CODE/SMIPS_Website'
+} else {
   deployDir <<-'C:/Users/sea084/Dropbox/RossRCode/Git/Shiny/SMIPS_Website'
 }
 
 setwd(deployDir)
 source('SMIPS_Config.R')
 source('appFunctions.R')
-
-
 
 
 server <- function(input, output,session) {
@@ -81,7 +80,7 @@ server <- function(input, output,session) {
                 textInput("usrID", "User Name", placeholder = 'Public'),
                 passwordInput("usrPwd", "Password", placeholder = 'Public'),
                 HTML(paste0('For Information about obtaining a login contact <a href=mailto:', adminEmail, '?Subject=SMIPS&nbsp;Access>', adminName, '</a>')), 
-                tags$a(href=paste0("mailto:", adminEmail, "?Subject=Hello%20again", adminName)),
+                tags$a(href=paste0("mailto:", adminEmail, "?Subject=SMIPS%20access%20Request%20", adminName)),
                 if (failed)
                   div(tags$b("Login failed", style = "color: red;")),
                 
@@ -196,7 +195,7 @@ server <- function(input, output,session) {
             
             
           ) %>%
-          
+
           addControlGPS(options = gpsOptions(setView=T, autoCenter=T, maxZoom=10)) %>%
 
           addLayersControl(
@@ -314,7 +313,7 @@ server <- function(input, output,session) {
     org <- rec$Organisation
     prod <- rec$ProductCode
     wmsServer <- rec$Server
-    wmsStyle <- rec$wmsStyle
+    #wmsStyle <- rec$wmsStyle
     wmsVersion <- rec$wmsVersion
     attrib <- rec$Attribution
     
@@ -342,8 +341,8 @@ server <- function(input, output,session) {
       if(useWMS) {
         
         if(org == 'CSIRO'){
-          wmsurl <- paste0(wmsServer, '.nc?TIME=', mDate, 'T00:00:00.000Z&numcolorbands=9&colorscalerange=0,1&belowmincolor=transparent&abovemaxcolor=extend')
-         
+          #wmsurl <- paste0(wmsServer, '.nc?TIME=', mDate, 'T00:00:00.000Z&numcolorbands=9&colorscalerange=0,1&belowmincolor=transparent&abovemaxcolor=extend')
+          wmsurl <- paste0(wmsServer, '.nc?TIME=', mDate, 'T00:00:00.000Z&belowmincolor=transparent')
           
         }else if(org == 'BoM'){
           wmsurl <- paste0(wmsServer, '/', prod, '_', wmsyear, '.nc?time=', mDate)
@@ -356,8 +355,10 @@ server <- function(input, output,session) {
         print(wmsurl)
         proxy %>% addWMSTiles(wmsurl, group= "Moisture Maps",
                   layers = prod,
-                  options = WMSTileOptions(format = "image/png", transparent = T, opacity = trans,  styles = wmsStyle, version = wmsVersion),
+                  #options = WMSTileOptions(format = "image/png", transparent = T, opacity = trans,  styles = wmsStyle, version = wmsVersion),
+                  options = WMSTileOptions(format = "image/png", transparent = T, opacity = trans, version = wmsVersion),
                   attribution = attrib)
+
       }else{
         
         url <- paste0(SMIPSAPIServer, '/RasterWindow?bbox=',max(bds$west, Ausminx),'%3B', min(bds$east, Ausmaxx),'%3B', max(bds$south, Ausminy),'%3B', min(bds$north, Ausmaxy) ,'&date=', dt, '&rows=',wmsnumrows,'&cols=', wmsnumcols)
@@ -430,7 +431,9 @@ server <- function(input, output,session) {
 
   
   ################## Render the Chart from a map drill  ##################
-  output$mositureChart1 <- renderDygraph({
+  output$dummyDygraph <- renderDygraph({})
+  output$moisitureChart1 <- renderDygraph({
+
 
     if(!is.null(RV$currentTS)){
       
@@ -438,7 +441,7 @@ server <- function(input, output,session) {
 
         maxVal <- max(RV$currentTS)
      
-        dygraph(RV$currentTS ,  main = paste0(RV$currentSiteInfo$DataType, '  (',RV$currentSiteInfo$Units, ') - ', RV$currentSiteInfo$SiteName, ' - ', RV$currentSiteInfo$Owner ), ylab =  RV$currentSiteInfo$DataType)%>%
+        dygraph(RV$currentTS ,  main = paste0(RV$currentSiteInfo$DataType, '  (',RV$currentSiteInfo$Units, ') - ', RV$currentSiteInfo$SiteName, ' - ', RV$currentSiteInfo$Owner ), ylab =  RV$currentSiteInfo$DataType) %>%
         #dySeries('Values', label = RV$currentSiteInfo$DataType) %>%
         dyAxis("y", label = RV$currentSiteInfo$DataType, valueRange = c(0, maxVal)) %>%
         dyOptions(axisLineWidth = 1.5, fillGraph = F, drawGrid = T, titleHeight = 26) %>%
@@ -447,8 +450,8 @@ server <- function(input, output,session) {
       })
     }
   })
-  
-  ################## Render the Info Table from a map drill  ##################
+  output$showDyGraph <- reactive({ifelse(is.null(RV$currentTS), "false", "true")})
+    ################## Render the Info Table from a map drill  ##################
   output$SensorDrillInfoTable = renderRHandsontable({
     
     req(RV$currentSiteInfo)
@@ -910,9 +913,9 @@ server <- function(input, output,session) {
     minDateShiny <- input$moistureDateRange[[1]][1]
     maxDateShiny  <- input$moistureDateRange[[2]][1]
     sd <- str_split(minDateShiny, '-')
-    isoSDate = paste0(sd[[1]][1], '-', sd[[1]][2], '-', sd[[1]][3], 'T00:00:00')
+    isoSDate <- paste0(sd[[1]][1], '-', sd[[1]][2], '-', sd[[1]][3], 'T00:00:00')
     ed <- str_split(maxDateShiny, '-')
-    isoEDate = paste0(ed[[1]][1], '-', ed[[1]][2], '-', ed[[1]][3], 'T23:59:59')
+    isoEDate <- paste0(ed[[1]][1], '-', ed[[1]][2], '-', ed[[1]][3], 'T23:59:59')
     
     url <- paste0(sensorFederation_Server, "/getSensorDataStreams?siteid=", sid,"&sensortype=", DataType,"&startdate=", isoSDate, '&enddate=', isoEDate, "&aggperiod=days")
     stnsRaw <- getURL(paste0(url))
@@ -959,168 +962,162 @@ server <- function(input, output,session) {
 }
 
 
-ui <- fluidPage(
-  
- 
-  tags$head(
-    tags$title('National Soil Moisture Info'),
-   tags$link(rel = "stylesheet", type = "text/css", href = "Styles/basic.css"),
+ui <- navbarPage(windowTitle = 'National Soil Moisture Info', theme = 'bootstrap.css', fluid = FALSE, inverse = TRUE,
+                 title = HTML('<span>&nbsp;&nbsp;National Soil Moisture Info</span><a href="#" class="navbar-left">&nbsp;<img src="Logos/CSIRO-logo-inverted.svg" width="60" height="60"></a>&nbsp;&nbsp;<a href="#" class="navbar-left"><img src="Logos/tern1-inverted.png" height="65"></img></a>'),
+                 header = tagList(
+  tags$head( # Start <head>
+    tags$link(rel = "stylesheet", type = "text/css", href = "Styles/csiro.css"),
    # tags$style(HTML("label {  font-size: 12px; }")),
-  div(class="span12", style="padding: 10px 0px; font-size: 10px; font-color:red",
-   tags$link( rel="icon" , type = "image/gif", href="images/SLGAicon.gif"),
   #tags$head(tags$script(src = "message-handler.js")),
-  
   useShinyjs(),
   tags$style(appCSS),
-  
   tags$style('
 #crosshair-button {
 position: relative;
 top: 10px;
 left: 70px;
-}'
-  )
-  
-  )
-   
-    ),
+}')
+  ), # End </head>
+
+  # Start <body>
+  # Header above panes (but below the nav)
+
+     # div(class = 'container-fluid', fluidRow( column(12,
+     #  #HTML("<p><img src='csiroLogo.png'> &nbsp;&nbsp;&nbsp;&nbsp;National Soil Moisture Information Products - PROTOTYPE ONLY</p>")
+     #   h1(
+     #  tags$img(src = 'Logos/TERN.png', width = '100px', height = '100px'),
+     #   tags$img(src = 'Logos/CSIRO.jpg', width = '100px', height = '60px'),
+     #   HTML("National Soil Moisture Information Products - PROTOTYPE") )
+     # )))
+                 ), # End header taglist
+      # Start tab panel list:
+                     tabPanel("Map View",
+                          sidebarLayout(fluid = FALSE,
+                            sidebarPanel(width = 3,
+                              div(class = 'container-fluid',fluidRow(
+
+                                column(6, actionLink("show", "Login")), HTML(''),
+                                column(6, htmlOutput("loginStatus")), HTML('<br><br>')
+
+                                ),
+
+                                fluidRow(selectInput("ProductType", "Map Product Type ", c('None'), selected = defaultMap, width = "100%")),
+                              #  fluidRow( helpText("Select map date below"),
+                                fluidRow(dateInput('moistureMapDate', label = 'Map Date', format = 'dd-mm-yyyy', value = Sys.Date()-defaultDisplayDate, width = 130))),
+
+                             # helpText("Use slider below to change map transparency"),
+                             fluidRow( sliderInput("moistureMapTrans", width= 150, label = "Map Transparency", min = 0.0,  max = 1.0, value = 1.0)),
+
+                            #  selectInput("SensorLabel", "Sensor Label ", sensorLabels, selected = 'SensorGroup', width= 120),
+
+                            fluidRow( actionButton("init", "Download Map Data", icon = icon("download")),
+                            downloadButton("downloadRasterData", "Download", style = "visibility: hidden;")
+                            ),
+                             #fluidRow( downloadButton('downloadRasterData', 'Download Map Data')),
+                             fluidRow( HTML('&nbsp;')),
 
 
-  
-   headerPanel2(
-     fluidPage(fluidRow(
-      #HTML("<p><img src='csiroLogo.png'> &nbsp;&nbsp;&nbsp;&nbsp;National Soil Moisture Information Products - PROTOTYPE ONLY</p>") 
-       tags$img(src = 'Logos/TERN.png', width = '100px', height = '100px'), 
-       tags$img(src = 'Logos/CSIRO.jpg', width = '100px', height = '60px'), 
-       HTML("National Soil Moisture Information Products - PROTOTYPE")
-     ))),
-                     tabsetPanel(
-                       tabPanel("Map View", 
-                                    sidebarLayout(fluid = TRUE,
-                                      sidebarPanel(width = 3,
-                                        fluidPage(fluidRow(
-                                          
-                                          column(2, actionLink("show", "Login")), HTML(''),
-                                          column(6, htmlOutput("loginStatus")), HTML('<br><br>')
-                                          
-                                          ),
-                                        
-                                          fluidRow(selectInput("ProductType", "Map Product Type ", c('None'), selected = defaultMap, width = 250)),
-                                        #  fluidRow( helpText("Select map date below"), 
-                                          fluidRow(dateInput('moistureMapDate', label = 'Map Date', format = 'dd-mm-yyyy', value = Sys.Date()-defaultDisplayDate, width = 130))),
-                                        
-                                       # helpText("Use slider below to change map transparency"), 
-                                       fluidRow( sliderInput("moistureMapTrans", width= 150, label = "Map Transparency", min = 0,  max = 1, value = 1)),
-                                        
-                                      #  selectInput("SensorLabel", "Sensor Label ", sensorLabels, selected = 'SensorGroup', width= 120),
-                                        
-                                      fluidRow( actionButton("init", "Download Map Data", icon = icon("download")),
-                                      downloadButton("downloadRasterData", "Download", style = "visibility: hidden;")
-                                      ),
-                                       #fluidRow( downloadButton('downloadRasterData', 'Download Map Data')),
-                                       fluidRow( HTML('&nbsp;')),
-                                      
-                                                
-                                       fluidRow(actionLink("toggleSettingsInfo", "Show Settings"),
-                                       
-                                       wellPanel(        
-                                       conditionalPanel(
-                                       
-                                       condition = "input.toggleSettingsInfo % 2 == 1",
-                                                  
-                                       fluidRow(selectInput("SelectedStreamType", "Sensor Type", sensorTypes, selected = defaultSensor, width= 150)),
-                                       fluidRow(dateRangeInput('moistureDateRange',label = 'Date range : yyyy-mm-dd',start =  as.Date('2017-05-27'), end = as.Date('2017-06-29')), width= 150)
-                                        )
-                                       )
-                                       ),
-                                       
-                                       fluidRow(column(8, bsAlert("progressAlert")))
-                                        
-                                        
-                                    ),
-                                  mainPanel(
-                                    
-                                  
-                                
-                                fluidPage(
-                                fluidRow(
-                                  
-                                  tags$style(' .leaflet-bar button,
+                             fluidRow(actionLink("toggleSettingsInfo", "Show Settings"),
+
+                             wellPanel(
+                             conditionalPanel(
+
+                             condition = "input.toggleSettingsInfo % 2 == 1",
+
+                             fluidRow(selectInput("SelectedStreamType", "Sensor Type", sensorTypes, selected = defaultSensor, width= 150)),
+                             fluidRow(dateRangeInput('moistureDateRange',label = 'Date range : yyyy-mm-dd',start =  as.Date('2017-05-27'), end = as.Date('2017-06-29')), width= 150)
+                              )
+                             )
+                             ),
+
+                             fluidRow(column(8, bsAlert("progressAlert")))
+
+
+                          ),
+                        mainPanel( width = 9,
+
+
+                      fluidRow( column(12,
+
+                        tags$style(' .leaflet-bar button,
 .leaflet-bar button:hover {
-  background-color: #fff;
-  border: none;
-  border-bottom: 1px solid #ccc;
-  width: 120px;
-  height: 30px;
-  line-height: 30px;
-  display: block;
-  text-align: left;
-  text-decoration: none;
-  color: black;
+background-color: #fff;
+border: none;
+border-bottom: 1px solid #ccc;
+width: 120px;
+height: 30px;
+line-height: 30px;
+display: block;
+text-align: left;
+text-decoration: none;
+color: black;
 }
 
 .leaflet-bar button {
-  background-position: 50% 50%;
-  background-repeat: no-repeat;
-  overflow: hidden;
-  display: block;
+background-position: 50% 50%;
+background-repeat: no-repeat;
+overflow: hidden;
+display: block;
 }
 
 .leaflet-bar button:hover {
-  background-color: #f4f4f4;
+background-color: #f4f4f4;
 }
 
 .leaflet-bar button:first-of-type {
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
+border-top-left-radius: 10px;
+border-top-right-radius: 10px;
 }
 
 .leaflet-bar button:last-of-type {
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-  border-bottom: none;
+border-bottom-left-radius: 10px;
+border-bottom-right-radius: 10px;
+border-bottom: none;
 }
 
 .leaflet-bar.disabled,
 .leaflet-bar button.disabled {
-  cursor: default;
-  pointer-events: none;
-  opacity: .4;
+cursor: default;
+pointer-events: none;
+opacity: .4;
 }
 
 .easy-button-button .button-state{
-  display: block;
-  width: 100%;
-  height: 100%;
-  position: relative;
+display: block;
+width: 100%;
+height: 100%;
+position: relative;
 }
 
 
 .leaflet-touch .leaflet-bar button {
-  width: 120px;
-  height: 30px;
-  line-height: 30px;
-  
-  .leaflet-container.crosshair-cursor-enabled {
-    cursor:crosshair;
-  }
+width: 120px;
+height: 30px;
+line-height: 30px;
+
+.leaflet-container.crosshair-cursor-enabled {
+cursor:crosshair;
+}
 
 }'
-                                  ),
-                                  
-                                  div( htmlOutput("message1"), style=paste0('color:', 'green', '; width: 850px;'))),
-                                fluidRow(
-                                  column(11, withSpinner( leafletOutput("moistureMap", width = "850", height = "650"))),
-                                  
-                                  absolutePanel(column(1, align="left",  imageOutput("wmsLegend")), left=870)) , 
-                                fluidRow( withSpinner( dygraphOutput("mositureChart1", width = "850", height = "300px"))),
-                                fluidRow( HTML("<BR><BR>")),
-                                fluidRow( rHandsontableOutput("SensorDrillInfoTable"))
-                                
-                               
-                                )
-                                
-                     ))),
+                        ),
+
+                        div( class = "panel panel-default", div(class = "panel-heading", HTML("Welcome")), div( class = "panel-body", htmlOutput("message1"), style=paste0('color:', 'green', '; width: 850px;')))
+                      )),
+
+                      fluidRow(
+                        column(12, withSpinner( leafletOutput("moistureMap", height = 650))),
+                        absolutePanel(column(1, align="left",  imageOutput("wmsLegend")), left=870)) ,
+                      dygraphOutput("dummyDygraph", height = "0px"), #Dummy dygraph to ensure loading of dygraph libraries at boot time, even when none are shown
+                      div(style="visibility:hidden;",verbatimTextOutput("showDyGraph")), # Dummy invisible output of showDygraph to ensure its included in the conditional render
+                      conditionalPanel('output.showDyGraph == "true"',
+                        fluidRow( column(12, withSpinner( dygraphOutput("moisitureChart1", height = "350px")))),
+                        fluidRow( HTML("<BR><BR>")),
+                        fluidRow( column(12, rHandsontableOutput("SensorDrillInfoTable")))
+                      )
+
+
+           ))),
                   #  tabPanel("Sensor Site Data View",
                   #  
                   #           fluidRow(
@@ -1132,7 +1129,7 @@ left: 70px;
                   #             ))
                   #      ),
          
-                  # tabPanel("Map Downloads",  fluidPage(fluidRow(
+                  # tabPanel("Map Downloads",  div(class = 'container-fluid', fluidRow(
                   #   fluidRow(column(2,     selectInput("MapProductsListForDownload", "Map Product to download", choices = c(''))),
                   #   column(1, selectInput("MapYearsForDownload", "Year", choices = c(''))),
                   #   column(1, selectInput("MapMonthsForDownload", "Month", choices = c(''))))
@@ -1156,13 +1153,15 @@ left: 70px;
                             includeHTML2(paste0( "www/StaticPages/About.html"))
                            # HTML("<h1>The SOil Moisture Information Processing System</h1>
                            #      <p></p>") 
-                  )
-                
+                  ),
+                 footer = div(class = 'footer',
+                              hr(),
+                   fluidRow( column(12,
+                   HTML('<img src="Logos/TERN-NCRIS-digital-Primary.jpg" width="350"></img>')
+                 )))
             ) 
-        )
+        #)</tabsetpanel>
  
-
-
 
 
      
