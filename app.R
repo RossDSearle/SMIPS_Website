@@ -161,15 +161,20 @@ server <- function(input, output,session) {
           #     onClick=JS("function(btn, map){map.setView([-28, 135], 4); }"))
           # )%>%
           # 
-
-          addEasyButtonBar(
-            easyButton(
+          addControlGPS(options = gpsOptions(setView=T, autoCenter=T, maxZoom=10)) %>%
+          addLayersControl(
+            baseGroups = c("Map", "Satelite Image"),
+            overlayGroups = c("Moisture Maps", "All Sensors"),
+            options = layersControlOptions(collapsed = FALSE)
+          ) %>%
+          addEasyButtonBar( position = "topright" ,
+            easyButton( position = "topright" ,
               states = list(
                 easyButtonState(
                   stateName="sOff",
                   #icon="fa-check",
                   #icon=htmltools::span(class = "star", htmltools::HTML('<img src="Buttons/drill.png"></font>')),
-                  icon=htmltools::span(class = "star", htmltools::HTML('<font color="gray">Get&nbspTimeseries&nbsp<b>Off</b></font>')),
+                  icon=htmltools::span(class = "star", htmltools::HTML('<font color="gray">Get&nbsp;Timeseries&nbsp;<b>Off</b></font>')),
                   title="Click to turn on drilling of a pixel on the map to return a timeseries of soil moisture values",
                   onClick = JS("
               function(btn, map) {
@@ -180,7 +185,7 @@ server <- function(input, output,session) {
                 ),
                 easyButtonState(
                   stateName="sOn",
-                  icon=htmltools::span(class = "star", htmltools::HTML('<font color="green">Get&nbspTimeseries&nbsp<b>On</b></font>')),
+                  icon=htmltools::span(class = "star", htmltools::HTML('<font color="green">Get&nbsp;Timeseries&nbsp;<b>On</b></font>')),
                   title="Click to turn off drilling of a pixel on the map to return a timeseries of soil moisture values",
                   onClick = JS("
               function(btn, map) {
@@ -195,13 +200,12 @@ server <- function(input, output,session) {
             
           ) %>%
 
-          addControlGPS(options = gpsOptions(setView=T, autoCenter=T, maxZoom=10)) %>%
 
-          addLayersControl(
-            baseGroups = c("Map", "Satelite Image"),
-            overlayGroups = c("Moisture Maps", "All Sensors"),
-            options = layersControlOptions(collapsed = FALSE)
-          )
+          htmlwidgets::onRender("
+          function(el, x) {
+            var moistureMap = this;
+            window.moistureMap = moistureMap;
+          }")
 
 
     })
@@ -314,7 +318,6 @@ server <- function(input, output,session) {
     
     trans <- input$moistureMapTrans
     if (is.null(trans)) { trans <- 1.0 } # Trans defaults to NULL if the slider is not created yet
-    print(paste0(trans))
     proxy <- leafletProxy("moistureMap", data = RV$sensorLocs)
     proxy %>% clearGroup("Moisture Maps")
     if(input$ProductType == 'None'){
@@ -360,7 +363,9 @@ server <- function(input, output,session) {
       proxy %>% leaflet::addLegend(pal = pal_rev, values = seq(0, 1, .1), title = "Moisture Map", labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
       }
       if (RV$RecreateSlider == TRUE) {
-        proxy %>% addControl(position = "bottomright", layerId = "overlay_transparency_slider", sliderInput("moistureMapTrans", width= 350, label = HTML('<div style="width: 200px; position: absolute; margin: 0px auto -70px 70px;">Overlay Opacity</div>'), ticks = FALSE, min = 0.0,  max = 1.0, value = trans, animate = FALSE))
+        sliderCtrl <- div(id = "slider_move_catcher", sliderInput("moistureMapTrans", width= 350, label = HTML('<div style="width: 200px; position: absolute; margin: 0px auto -70px 70px;">Overlay Opacity</div>'), ticks = FALSE, min = 0.0,  max = 1.0, value = trans, animate = FALSE),
+                          onmouseover = "window.moistureMap.dragging.disable();", onmouseout = "window.moistureMap.dragging.enable();")
+        proxy %>% addControl(position = "bottomright", layerId = "overlay_transparency_slider", className = "info", sliderCtrl)
         RV$RecreateSlider <- FALSE
       }
       #proxy %>% leaflet::addLegend(pal = pal, values = c("Wet", 'Dry'), title = "Moisture Map")
@@ -882,7 +887,7 @@ server <- function(input, output,session) {
 
   
   output$welcomeMessage <- renderText({"
-<p>Click anywhere on the map to display a modelled soil moisture timeseries chart for the selected modelled product,
+<p>Click 'Get Timeseries' then anywhere on the map to display a modelled soil moisture timeseries chart for the selected modelled product,
     or select a sensor location marker to retrieve a measured timeseries of either soil moisture or rainfall for a location. 
     The timeseries will be displayed below the map.</p>
 "})
