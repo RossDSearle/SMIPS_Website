@@ -63,3 +63,8 @@ body .navbar.navbar-inverse {
 .navbar-inverse .navbar-nav li a:focus {
     background-color: #5c7b82
 }
+
+.lower-footer {
+    background-color: #00303b;
+    color: #fefefe;
+}

@@ -55,9 +55,9 @@ server <- function(input, output,session) {
   RV$sensorLocs <- NULL
 
   RV$AvailableMapProducts <- c( 'None', productsDF$Name)
-
+  RV$RecreateSlider <- TRUE
   RV$Log <- logInfo
-  
+
   SMIPSDrillbtn = reactiveVal('SmipsDrillOff')
 
   observe({
@@ -92,7 +92,7 @@ server <- function(input, output,session) {
   }
   
   # Show modal when button is clicked.
-  observeEvent(input$show, {
+  observeEvent(input$showLogin, {
     showModal(Login())
   })
   
@@ -147,13 +147,12 @@ server <- function(input, output,session) {
       req(RV$sensorLocs)
       #legendurl <- paste0(wmsServer, '?VERSION=1.3.0&SERVICE=WMS&REQUEST=GetLegendGraphic&LAYER=', product, '&FORMAT=image%2Fpng')
 
-        leaflet() %>%
-          clearMarkers() %>%
-          addTiles(group = "Map") %>%
-          addProviderTiles("Esri.WorldImagery", options = providerTileOptions(noWrap = TRUE), group = "Satelite Image") %>%
- 
-       setView(lng = 135, lat = -28, zoom = 4) %>%
-         # addMouseCoordinates(style = "basic") %>%
+      leaflet() %>%
+      clearMarkers() %>%
+      addTiles(group = "Map") %>%
+      addProviderTiles("Esri.WorldImagery", options = providerTileOptions(noWrap = TRUE), group = "Satelite Image") %>%
+      setView(lng = 135, lat = -28, zoom = 4) %>%
+        # addMouseCoordinates(style = "basic") %>%
           # addEasyButton(
           #   easyButton(
           #     icon = 'fa-globe',
@@ -162,15 +161,20 @@ server <- function(input, output,session) {
           #     onClick=JS("function(btn, map){map.setView([-28, 135], 4); }"))
           # )%>%
           # 
-
-          addEasyButtonBar(
-            easyButton(
+          addControlGPS(options = gpsOptions(setView=T, autoCenter=T, maxZoom=10)) %>%
+          addLayersControl(
+            baseGroups = c("Map", "Satelite Image"),
+            overlayGroups = c("Moisture Maps", "All Sensors"),
+            options = layersControlOptions(collapsed = FALSE)
+          ) %>%
+          addEasyButtonBar( position = "topright" ,
+            easyButton( position = "topright" ,
               states = list(
                 easyButtonState(
                   stateName="sOff",
                   #icon="fa-check",
                   #icon=htmltools::span(class = "star", htmltools::HTML('<img src="Buttons/drill.png"></font>')),
-                  icon=htmltools::span(class = "star", htmltools::HTML('<font color="gray">Get&nbspTimeseries&nbsp<b>Off</b></font>')),
+                  icon=htmltools::span(class = "star", htmltools::HTML('<font color="gray">Get&nbsp;Timeseries&nbsp;<b>Off</b></font>')),
                   title="Click to turn on drilling of a pixel on the map to return a timeseries of soil moisture values",
                   onClick = JS("
               function(btn, map) {
@@ -181,7 +185,7 @@ server <- function(input, output,session) {
                 ),
                 easyButtonState(
                   stateName="sOn",
-                  icon=htmltools::span(class = "star", htmltools::HTML('<font color="green">Get&nbspTimeseries&nbsp<b>On</b></font>')),
+                  icon=htmltools::span(class = "star", htmltools::HTML('<font color="green">Get&nbsp;Timeseries&nbsp;<b>On</b></font>')),
                   title="Click to turn off drilling of a pixel on the map to return a timeseries of soil moisture values",
                   onClick = JS("
               function(btn, map) {
@@ -196,26 +200,22 @@ server <- function(input, output,session) {
             
           ) %>%
 
-          addControlGPS(options = gpsOptions(setView=T, autoCenter=T, maxZoom=10)) %>%
 
-          addLayersControl(
-            baseGroups = c("Map", "Satelite Image"),
-            overlayGroups = c("Moisture Maps", "All Sensors"),
-            options = layersControlOptions(collapsed = FALSE)
-          ) 
-        #leaflet.extras::addWMSLegend(uri =legendurl, position = 'bottomright')
-        
-        
-        
+          htmlwidgets::onRender("
+          function(el, x) {
+            var moistureMap = this;
+            window.moistureMap = moistureMap;
+          }")
+
+
     })
   
   observe({
    
     req(RV$sensorLocs)
-   
-    input$ProductType
+
     sdf <- RV$sensorLocs
-    
+
     labs <- lapply(seq(nrow(sdf)), function(i) {
       paste0( '<li>Site Name : ', sdf[i, "SiteName"], '</li>',
               '<li>Provider : ', sdf[i, "SensorGroup"], '</li>',
@@ -234,21 +234,20 @@ server <- function(input, output,session) {
     factpal <-colorFactor(RColorBrewer::brewer.pal(colCnt, 'Spectral'), colField)
    print( head(sdf))
 
-    proxy <- leafletProxy("moistureMap", data = RV$sensorLocs) 
-    proxy %>% clearMarkers()
-    proxy %>% clearControls()
-    proxy %>% addCircleMarkers(   lng = ~Longitude, lat = ~Latitude, 
+    proxy <- leafletProxy("moistureMap", data = RV$sensorLocs)
+    proxy %>% clearGroup("All Sensors")
+    #proxy %>% clearMarkers()
+    #proxy %>% clearControls()
+
+    proxy %>% addCircleMarkers(   lng = ~Longitude, lat = ~Latitude,
                                      label = lapply(labs, HTML),
                                      stroke = FALSE, 
                                      fillOpacity = 1,
                                      color = factpal(sdf[,'SensorGroup']), 
                                      radius = 4, 
-                                    layerId=paste0(sdf$SiteID), 
-                                     group = "Sensors" )
-    #proxy %>% setView(lng = center()[1],lat = center()[2],zoom = zoom())
-    proxy %>% leaflet::addLegend("bottomleft", pal = factpal, values = colCats,title = 'SensorGroup')
-    
-    
+                                     layerId = paste0(sdf$SiteID),
+                                     group = "All Sensors" )  %>%
+    leaflet::addLegend("bottomleft", pal = factpal, values = colCats,title = 'SensorGroup', group = "All Sensors")
   })
   
       
@@ -306,7 +305,7 @@ server <- function(input, output,session) {
   
   # Use a separate observer to recreate wms maps as needed
   observe({
-    
+
     mDate <- input$moistureMapDate
     wmsyear <- paste0( substr(mDate, 1, 4))
     rec <- productsDF[productsDF$Name==input$ProductType,][1,]
@@ -318,25 +317,20 @@ server <- function(input, output,session) {
     attrib <- rec$Attribution
     
     trans <- input$moistureMapTrans
-    
+    if (is.null(trans)) { trans <- 1.0 } # Trans defaults to NULL if the slider is not created yet
+    proxy <- leafletProxy("moistureMap", data = RV$sensorLocs)
+    proxy %>% clearGroup("Moisture Maps")
     if(input$ProductType == 'None'){
-      proxy <- leafletProxy("moistureMap", data = RV$sensorLocs)
-      proxy %>% clearGroup("Moisture Maps")
-      
+      if (RV$RecreateSlider == FALSE) {
+        proxy %>% removeControl("overlay_transparency_slider")
+        RV$RecreateSlider <- TRUE
+      }
     }else{
       
       dbits <- str_split(mDate, '-')
       dt <- paste0(dbits[[1]][3], '-', dbits[[1]][2], '-', dbits[[1]][1])
-  
-      
-      
-      bds <- input$moistureMap_bounds
 
-      pal <- colorNumeric(c("#FFFFCC", "#41B6C4", "#0C2C84"), seq(0, 1, .1),na.color = "transparent")
-      pal_rev <- colorNumeric(c("#FFFFCC", "#41B6C4", "#0C2C84"), seq(0, 1, .1),na.color = "transparent", reverse = TRUE)
-      
-      proxy <- leafletProxy("moistureMap", data = RV$sensorLocs)
-      proxy %>% clearControls()
+      #proxy %>% clearControls()
       
       if(useWMS) {
         
@@ -351,8 +345,7 @@ server <- function(input, output,session) {
           #http://dapds00.nci.org.au/thredds/wms/ub8/au/OzWALD/daily/OzWALD.daily.Ssoil.2018.nc?&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&layers=Ssoil&CRS=CRS:84&bbox=112.0,-44,154.0,-10.0&format=image/png&time=2018-06-13T00:00:00.000Z&styles=&TRANSPARENT=true&width=400&height=300&style=boxfill/anu_wald_darkblues&transparent=true
           wmsurl <- paste0(wmsServer, '/OzWALD.daily.', prod, '.', wmsyear, '.nc?time=', mDate, 'T00:00:00.000Z&numcolorbands=9&colorscalerange=0,1800&belowmincolor=transparent&abovemaxcolor=extend')
         }
-        
-        print(wmsurl)
+
         proxy %>% addWMSTiles(wmsurl, group= "Moisture Maps",
                   layers = prod,
                   #options = WMSTileOptions(format = "image/png", transparent = T, opacity = trans,  styles = wmsStyle, version = wmsVersion),
@@ -360,14 +353,20 @@ server <- function(input, output,session) {
                   attribution = attrib)
 
       }else{
-        
+        bds <- input$moistureMap_bounds
         url <- paste0(SMIPSAPIServer, '/RasterWindow?bbox=',max(bds$west, Ausminx),'%3B', min(bds$east, Ausmaxx),'%3B', max(bds$south, Ausminy),'%3B', min(bds$north, Ausmaxy) ,'&date=', dt, '&rows=',wmsnumrows,'&cols=', wmsnumcols)
         mr <- getRasterFromAPI(url)
+      pal <- colorNumeric(c("#FFFFCC", "#41B6C4", "#0C2C84"), seq(0, 1, .1),na.color = "transparent")
+      pal_rev <- colorNumeric(c("#FFFFCC", "#41B6C4", "#0C2C84"), seq(0, 1, .1),na.color = "transparent", reverse = TRUE)
 
-      proxy %>% addRasterImage(mr, colors = pal, opacity = 0.8, group= "Moisture Maps") 
+      proxy %>% addRasterImage(mr, colors = pal, opacity = 0.8, group = "Moisture Maps")
       proxy %>% leaflet::addLegend(pal = pal_rev, values = seq(0, 1, .1), title = "Moisture Map", labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
-      
-      
+      }
+      if (RV$RecreateSlider == TRUE) {
+        sliderCtrl <- div(id = "slider_move_catcher", sliderInput("moistureMapTrans", width= 350, label = HTML('<div style="width: 200px; position: absolute; margin: 0px auto -70px 70px;">Overlay Opacity</div>'), ticks = FALSE, min = 0.0,  max = 1.0, value = trans, animate = FALSE),
+                          onmouseover = "window.moistureMap.dragging.disable();", onmouseout = "window.moistureMap.dragging.enable();")
+        proxy %>% addControl(position = "bottomright", layerId = "overlay_transparency_slider", className = "info", sliderCtrl)
+        RV$RecreateSlider <- FALSE
       }
       #proxy %>% leaflet::addLegend(pal = pal, values = c("Wet", 'Dry'), title = "Moisture Map")
       
@@ -887,8 +886,8 @@ server <- function(input, output,session) {
 
 
   
-  output$message1 <- renderText({"
-<p>Click anywhere on the map to display a modelled soil moisture timeseries chart for the selected modelled product,
+  output$welcomeMessage <- renderText({"
+<p>Click 'Get Timeseries' then anywhere on the map to display a modelled soil moisture timeseries chart for the selected modelled product,
     or select a sensor location marker to retrieve a measured timeseries of either soil moisture or rainfall for a location. 
     The timeseries will be displayed below the map.</p>
 "})
@@ -952,10 +951,10 @@ server <- function(input, output,session) {
   
   
   observe ({
-    if((input$toggleSettingsInfo  %% 2) == 1){
-      updateActionButton(session, "toggleSettingsInfo", label = "Hide Settings")
+    if((input$toggleSensorSettingsInfo  %% 2) == 1){
+      updateActionButton(session, "toggleSensorSettingsInfo", label = "Hide Sensor Settings")
     }else{
-      updateActionButton(session, "toggleSettingsInfo", label = "Show Settings")
+      updateActionButton(session, "toggleSensorSettingsInfo", label = "Show Sensor Settings")
     }
   })
   
@@ -963,7 +962,7 @@ server <- function(input, output,session) {
 
 
 ui <- navbarPage(windowTitle = 'National Soil Moisture Info', theme = 'bootstrap.css', fluid = FALSE, inverse = TRUE,
-                 title = HTML('<span>&nbsp;&nbsp;National Soil Moisture Info</span><a href="#" class="navbar-left">&nbsp;<img src="Logos/CSIRO-logo-inverted.svg" width="60" height="60"></a>&nbsp;&nbsp;<a href="#" class="navbar-left"><img src="Logos/tern1-inverted.png" height="65"></img></a>'),
+                 title = HTML('<a href="#" class="navbar-left">&nbsp;<img src="Logos/CSIRO-logo-inverted.svg" width="60" height="60"></a>&nbsp;&nbsp;<a href="#" class="navbar-left"><img src="Logos/tern1-inverted.png" height="65"></img></a><span>&nbsp;&nbsp;National Soil Moisture Info</span>'),
                  header = tagList(
   tags$head( # Start <head>
     tags$link(rel = "stylesheet", type = "text/css", href = "Styles/csiro.css"),
@@ -994,44 +993,39 @@ left: 70px;
                      tabPanel("Map View",
                           sidebarLayout(fluid = FALSE,
                             sidebarPanel(width = 3,
-                              div(class = 'container-fluid',fluidRow(
+                              div(class = 'container-fluid',
+                                  conditionalPanel('false', fluidRow(
 
-                                column(6, actionLink("show", "Login")), HTML(''),
+                                column(6, actionLink("showLogin", "Login")), HTML(''),
                                 column(6, htmlOutput("loginStatus")), HTML('<br><br>')
 
-                                ),
+                                )),
 
                                 fluidRow(selectInput("ProductType", "Map Product Type ", c('None'), selected = defaultMap, width = "100%")),
                               #  fluidRow( helpText("Select map date below"),
                                 fluidRow(dateInput('moistureMapDate', label = 'Map Date', format = 'dd-mm-yyyy', value = Sys.Date()-defaultDisplayDate, width = 130))),
 
-                             # helpText("Use slider below to change map transparency"),
-                             fluidRow( sliderInput("moistureMapTrans", width= 150, label = "Map Transparency", min = 0.0,  max = 1.0, value = 1.0)),
 
                             #  selectInput("SensorLabel", "Sensor Label ", sensorLabels, selected = 'SensorGroup', width= 120),
 
-                            fluidRow( actionButton("init", "Download Map Data", icon = icon("download")),
+                            fluidRow( column(12, actionButton("init", "Download Map Data", icon = icon("download")),
                             downloadButton("downloadRasterData", "Download", style = "visibility: hidden;")
-                            ),
+                            )),
                              #fluidRow( downloadButton('downloadRasterData', 'Download Map Data')),
                              fluidRow( HTML('&nbsp;')),
 
 
-                             fluidRow(actionLink("toggleSettingsInfo", "Show Settings"),
+                             fluidRow(column(12, actionLink("toggleSensorSettingsInfo", "Sensor Settings")),
 
                              wellPanel(
                              conditionalPanel(
 
-                             condition = "input.toggleSettingsInfo % 2 == 1",
+                             condition = "input.toggleSensorSettingsInfo % 2 == 1",
 
-                             fluidRow(selectInput("SelectedStreamType", "Sensor Type", sensorTypes, selected = defaultSensor, width= 150)),
-                             fluidRow(dateRangeInput('moistureDateRange',label = 'Date range : yyyy-mm-dd',start =  as.Date('2017-05-27'), end = as.Date('2017-06-29')), width= 150)
-                              )
+                             fluidRow(column(12,selectInput("SelectedStreamType", "Sensor Type", sensorTypes, selected = defaultSensor, width= 150))),
+                             fluidRow(column(12, dateRangeInput('moistureDateRange',label = 'Date range : yyyy-mm-dd',start =  as.Date('2017-05-27'), end = as.Date('2017-06-29')),)))
                              )
                              ),
-
-                             fluidRow(column(8, bsAlert("progressAlert")))
-
 
                           ),
                         mainPanel( width = 9,
@@ -1102,12 +1096,13 @@ cursor:crosshair;
 }'
                         ),
 
-                        div( class = "panel panel-default", div(class = "panel-heading", HTML("Welcome")), div( class = "panel-body", htmlOutput("message1"), style=paste0('color:', 'green', '; width: 850px;')))
+                        div( class = "panel panel-default", div(class = "panel-heading", HTML("Welcome to SMIPS")), div( class = "panel-body", htmlOutput("welcomeMessage"), style=paste0('color:', 'green', '; width: 850px;')))
                       )),
 
                       fluidRow(
                         column(12, withSpinner( leafletOutput("moistureMap", height = 650))),
                         absolutePanel(column(1, align="left",  imageOutput("wmsLegend")), left=870)) ,
+                      fluidRow(column(12, bsAlert("progressAlert"))),
                       dygraphOutput("dummyDygraph", height = "0px"), #Dummy dygraph to ensure loading of dygraph libraries at boot time, even when none are shown
                       div(style="visibility:hidden;",verbatimTextOutput("showDyGraph")), # Dummy invisible output of showDygraph to ensure its included in the conditional render
                       conditionalPanel('output.showDyGraph == "true"',
@@ -1157,10 +1152,14 @@ cursor:crosshair;
                  footer = div(class = 'footer',
                               hr(),
                    fluidRow( column(12,
-                   HTML('<img src="Logos/TERN-NCRIS-digital-Primary.jpg" width="350"></img>')
-                 )))
+                   HTML('<div style="margin: 0px auto 0px auto; width:450px;"><img src="Logos/TERN-NCRIS-digital-Primary.jpg" width="100%"></img></div>')
+                 )),
+                   #Trick to escape the fixed-size container for the full-width lower-footer
+                   HTML('</div><!--close footer--></div><!--close row--></div><!--close container-->
+                   <div class="container-fluid"><div class="row lower-footer"><div class="col-sm-12"><p>&nbsp;<br/>&nbsp;<br/></p>')
+                 )
             ) 
-        #)</tabsetpanel>
+
  
 
 

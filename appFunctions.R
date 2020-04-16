@@ -63,3 +63,18 @@ getRasterFromAPI <- function(url){
   # con <- readBin(bin ,'raw')
   return(raster(url))
 }
+
+addCustomLegend <- function(
+  map, html, position = c("topright", "bottomright", "bottomleft", "topleft"),
+  className = "info legend", layerId = NULL, group = NULL, data = getMapData(map)
+) {
+    position <- match.arg(position)
+
+    deps <- htmltools::resolveDependencies(htmltools::findDependencies(html))
+    html <- as.character(html)
+
+    map$dependencies <- c(map$dependencies, deps)
+    legend <- list(html = html,  position = position, layerId = layerId, className = className, group = group)
+
+    invokeMethod(map, data, "addCustomLegend", legend)
+}
