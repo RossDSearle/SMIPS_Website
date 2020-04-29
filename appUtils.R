@@ -26,14 +26,17 @@ convertJSONtoDF <- function(resp){
 convertJSONtoTS <- function(resp, format){
   
   xin <- fromJSON(resp)
-  outDF <- data.frame(xin$DataStream[[1]]$t)
+  row_1_times <- xin$DataStream[[1]]$t
+  len_times <- length(row_1_times)
+  outDF <- data.frame(row_1_times)
   cnames<- c('DateTime', rep('x', nrow(xin)))
-  
   for (i in 1:nrow(xin)) {
-    outDF <- cbind(outDF, xin$DataStream[[i]]$v)
-    cnames[i+1] <-  paste0(xin$DataType[[i]], "_", xin$UpperDepth[[i]])
+    cnames[i+1] <- paste0(xin$DataType[[i]], "_", xin$UpperDepthCm[[i]])
+    row_vals <- xin$DataStream[[i]]$v
+    if (length(row_vals) != len_times)
+      row_vals <- rep(0.0, len_times)
+    outDF <- cbind(outDF, row_vals)
   }
-  
   colnames(outDF) <- cnames
   
   ds <- na.omit(outDF)

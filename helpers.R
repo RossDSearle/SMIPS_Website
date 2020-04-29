@@ -78,4 +78,7 @@ color: green;
 margin-top: 10px;
 color: red;
 }
+#overlay_transparency_slider.leaflet-control {
+height: 70px;
+}
 "
