@@ -171,11 +171,15 @@ server <- function(input, output,session) {
          if (isTRUE(SHOW_GPS_BUTTON)) {
           lf <- addControlGPS(lf, options = gpsOptions(setView=T, autoCenter=T, maxZoom=10))
          }
+         sbo <- scaleBarOptions(maxWidth = 200, metric = TRUE, imperial = FALSE, updateWhenIdle = TRUE)
           lf <- addLayersControl(lf,
             baseGroups = c("Map", "Satelite Image"),
             overlayGroups = ifelse(isTRUE(ENABLE_SITES), c("Moisture Maps", "All Sensors"), c("Moisture Maps")),
             options = layersControlOptions(collapsed = FALSE)
-          )
+          ) %>%
+          addScaleBar(position = "bottomleft", options = sbo)
+
+
           lf <- if (isTRUE(ALWAYS_DRILL)) lf else addEasyButtonBar(lf, position = "topright" ,
             easyButton( position = "topright" ,
               states = list(

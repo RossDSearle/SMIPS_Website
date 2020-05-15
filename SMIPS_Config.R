@@ -62,8 +62,8 @@ AusRes <- 0.01
 Ausnumrows <- 3474
 Ausnumcols <- 4110
 
-
 productsDF <- read.csv(paste0(deployDir, '/ConfigFiles/RasterServices_config.csv'), stringsAsFactors=F)
+productsDF <- productsDF[!startsWith(productsDF$Name, "!"),]
 productsDF <- productsDF[order(productsDF$ProductOrder),]
 
 unitsDF <- read.csv('ConfigFiles/units.csv')
