@@ -25,12 +25,7 @@ library(lubridate)
 library(raster)
 library(httr)
 
-product <- 'Openloop_Volumetric_SM'
-
-ALWAYS_DRILL <- TRUE
-ENABLE_SITES <- FALSE
-SHOW_WELCOME_MESSAGE <- FALSE
-SHOW_GPS_BUTTON <- FALSE
+#product <- 'Openloop_Volumetric_SM'
 
 machineName <- as.character(Sys.info()['nodename'])
 if (machineName=='soils-discovery') {
@@ -42,24 +37,32 @@ if (machineName=='soils-discovery') {
 }
 
 setwd(deployDir)
-source('SMIPS_Config.R')
-source('appFunctions.R')
+source('./SMIPS_Config.R')
+source('./appFunctions.R')
+source('./appUtils.R')
+source("./helpers.R")
 
+#productsDF <- read.csv(paste0(deployDir, '/ConfigFiles/RasterServices_config.csv'), stringsAsFactors=F)
+productsDF <- fromJSON(configURL)
+productsDF <- productsDF[!startsWith(productsDF$Name, "!"),]
+productsDF <- productsDF[order(productsDF$ProductOrder),]
+defaultMap= productsDF$Name[2]
 
 server <- function(input, output,session) {
   
 
   RV <- reactiveValues()
-  RV$currentTS <- NULL
-  RV$currentSite <- NULL
+  # RV$currentTS <- NULL
+  # RV$currentSite <- NULL
   RV$currentDownloadTS <- NULL
 
-  RV$Usr <- defaultUser
-  RV$Pwd <- defaultPwd
-  RV$AvailableSensors <- NULL
-  RV$sensorLocs <- NULL
+  # RV$Usr <- defaultUser
+  # RV$Pwd <- defaultPwd
+  # RV$AvailableSensors <- NULL
+  # RV$sensorLocs <- NULL
 
-  RV$AvailableMapProducts <- c( 'None', productsDF$Name)
+ # RV$AvailableMapProducts <- c( 'None', productsDF$Name)
+  RV$AvailableMapProducts <- c(  productsDF$Name)
   RV$RecreateSlider <- TRUE
   RV$Log <- logInfo
 
@@ -67,75 +70,100 @@ server <- function(input, output,session) {
 
 
 
-  observe({
-    req(RV$Usr,RV$Pwd)
-
-    url <- paste0(sensorFederation_Server,"/getSensorLocations?sensortype=Soil-Moisture&usr=",RV$Usr, '&pwd=',RV$Pwd )
-    d <- getURL(url)
-    sensorLocs <- fromJSON(d)
-    RV$sensorLocs <- sensorLocs
+  
+  output$wWCS <- renderUI({
     
-    RV$Log <-Logit('Get a list of the available sensors', url)
+    #req( input$moistureMap)
     
-   
+    pres <- 0.0008333333333467680612
+    #rows <- (input$moistureMap_bounds$north - input$wMainMap_bounds$south) / pres
+    #cols <- (input$moistureMap_bounds$east - input$wMainMap_bounds$west) / pres
+    #pixels <- rows*cols
+    
+    shiny::tags$html()
+    url <-  'http://esoil.io/thredds/wcs/SMIPSall/SMIPSv0.5.nc?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&FORMAT=GeoTIFF_Float&COVERAGE=Blended_Precipitation&CRS=OGC:CRS84&TIME=2020-01-01T00:00:00Z'
+    
+    
+      #res <- paste0('&RESX=', pres, '&RESY=', pres)
+      bbox <- paste0(input$moistureMap_bounds$west, ',', input$moistureMap_bounds$south, ',',input$moistureMap_bounds$east, ',',input$moistureMap_bounds$north )
+      print(input$moistureMap_bounds)
+     # tags$a(paste0("Download ", " Current Extent"), href=paste0(url, '&BBOX=', bbox), html(' download="something.txt"'))
+      
+     HTML( paste0('<a href=', url,  ' download="w3logohhhh.tif">Test</a>') )
+    # }else{
+    #   tags$html("")
+    # }
   })
   
-
-
-  Login <- function(failed = FALSE) {
-    modalDialog(title = "SMIPS Login", size = 's',
-                textInput("usrID", "User Name", placeholder = 'Public'),
-                passwordInput("usrPwd", "Password", placeholder = 'Public'),
-                HTML(paste0('For Information about obtaining a login contact <a href=mailto:', adminEmail, '?Subject=SMIPS&nbsp;Access>', adminName, '</a>')), 
-                tags$a(href=paste0("mailto:", adminEmail, "?Subject=SMIPS%20access%20Request%20", adminName)),
-                if (failed)
-                  div(tags$b("Login failed", style = "color: red;")),
-                
-                footer = tagList(
-                  modalButton("Cancel"),
-                  actionButton("ok", "Login")
-                )
-    )
-  }
+  # observe({
+  #   req(RV$Usr,RV$Pwd)
+  # 
+  #   url <- paste0(sensorFederation_Server,"/getSensorLocations?sensortype=Soil-Moisture&usr=",RV$Usr, '&pwd=',RV$Pwd )
+  #   d <- getURL(url)
+  #   sensorLocs <- fromJSON(d)
+  #   RV$sensorLocs <- sensorLocs
+  #   
+  #   RV$Log <-Logit('Get a list of the available sensors', url)
+  #   
+  #  
+  # })
   
-  # Show modal when button is clicked.
-  observeEvent(input$showLogin, {
-    showModal(Login())
-  })
-  
-  observeEvent(input$ok, {
 
-    if (!is.null(input$usrID) && nzchar(input$usrID) && !is.null(input$usrPwd) && nzchar(input$usrPwd) ) {
-     
-      req(input$usrID,input$usrPwd)
-
-      RV$Usr <- input$usrID
-      RV$Pwd <- input$usrPwd
-      loginResult <-T # smipsLogin(usr = input$usrID, pwd = input$usrPwd )
-      if(loginResult){
-            # if(RV$Usr == 'Public'){
-            #   
-            #   RV$AvailableMapProducts <- c( 'None', productsDF[productsDF$Organisation=='CSIRO',2])
-            # }else{
-            #   RV$AvailableMapProducts <- c( 'None', productsDF[productsDF$Name,2])
-            # }
-        removeModal()
-        
-      }else{
-        showModal(Login(failed = TRUE))
-      }
-     
-     } else {
-       showModal(Login(failed = TRUE))
-    }
-  })
-  
-  # Display information about selected data
-  output$loginStatus <- renderText({
-    if (!is.null(RV$Usr)){
-      paste0(RV$Usr)
-    }
-  })
+# 
+#   Login <- function(failed = FALSE) {
+#     modalDialog(title = "SMIPS Login", size = 's',
+#                 textInput("usrID", "User Name", placeholder = 'Public'),
+#                 passwordInput("usrPwd", "Password", placeholder = 'Public'),
+#                 HTML(paste0('For Information about obtaining a login contact <a href=mailto:', adminEmail, '?Subject=SMIPS&nbsp;Access>', adminName, '</a>')), 
+#                 tags$a(href=paste0("mailto:", adminEmail, "?Subject=SMIPS%20access%20Request%20", adminName)),
+#                 if (failed)
+#                   div(tags$b("Login failed", style = "color: red;")),
+#                 
+#                 footer = tagList(
+#                   modalButton("Cancel"),
+#                   actionButton("ok", "Login")
+#                 )
+#     )
+#   }
+#   
+#   # Show modal when button is clicked.
+#   observeEvent(input$showLogin, {
+#     showModal(Login())
+#   })
+#   
+#   observeEvent(input$ok, {
+# 
+#     if (!is.null(input$usrID) && nzchar(input$usrID) && !is.null(input$usrPwd) && nzchar(input$usrPwd) ) {
+#      
+#       req(input$usrID,input$usrPwd)
+# 
+#       RV$Usr <- input$usrID
+#       RV$Pwd <- input$usrPwd
+#       loginResult <-T # smipsLogin(usr = input$usrID, pwd = input$usrPwd )
+#       if(loginResult){
+#             # if(RV$Usr == 'Public'){
+#             #   
+#             #   RV$AvailableMapProducts <- c( 'None', productsDF[productsDF$Organisation=='CSIRO',2])
+#             # }else{
+#             #   RV$AvailableMapProducts <- c( 'None', productsDF[productsDF$Name,2])
+#             # }
+#         removeModal()
+#         
+#       }else{
+#         showModal(Login(failed = TRUE))
+#       }
+#      
+#      } else {
+#        showModal(Login(failed = TRUE))
+#     }
+#   })
+#   
+#   # Display information about selected data
+#   output$loginStatus <- renderText({
+#     if (!is.null(RV$Usr)){
+#       paste0(RV$Usr)
+#     }
+#   })
   
   
   
@@ -225,47 +253,47 @@ server <- function(input, output,session) {
 
 
     })
-  if (isTRUE(ENABLE_SITES)) {
-  observe({
-   
-    req(RV$sensorLocs)
-
-    sdf <- RV$sensorLocs
-
-    labs <- lapply(seq(nrow(sdf)), function(i) {
-      paste0( '<li>Site Name : ', sdf[i, "SiteName"], '</li>',
-              '<li>Provider : ', sdf[i, "SensorGroup"], '</li>',
-              '<li>Backend : ', sdf[i, "Backend"], '</li>',
-              '<li>Access : ', sdf[i, "Access"], '</li>',
-              '<li>Site ID : ', sdf[i, "SiteID"], '</li>'
-              #,'<li>Available Sensors : ',  paste(tsens, collapse = ', '), '</li>'
-      )
-    })
-    
-    #colCnt <- length(unique(sdf[,input$SensorLabel]))
-    #colCats <- unique(sdf[,input$SensorLabel])
-    colCnt <- length(unique(sdf[,'SensorGroup']))
-    colCats <- unique(sdf[,'SensorGroup'])
-    colField <- sdf[,'SensorGroup']
-    factpal <-colorFactor(RColorBrewer::brewer.pal(colCnt, 'Spectral'), colField)
-   print( head(sdf))
-
-    proxy <- leafletProxy("moistureMap", data = RV$sensorLocs)
-    proxy %>% clearGroup("All Sensors")
-    #proxy %>% clearMarkers()
-    #proxy %>% clearControls()
-
-    proxy %>% addCircleMarkers(   lng = ~Longitude, lat = ~Latitude,
-                                     label = lapply(labs, HTML),
-                                     stroke = FALSE, 
-                                     fillOpacity = 1,
-                                     color = factpal(sdf[,'SensorGroup']), 
-                                     radius = 4, 
-                                     layerId = paste0(sdf$SiteID),
-                                     group = "All Sensors" )  %>%
-    leaflet::addLegend("bottomleft", pal = factpal, values = colCats,title = 'SensorGroup', group = "All Sensors")
-  })
-  }
+  # if (isTRUE(ENABLE_SITES)) {
+  # observe({
+  #  
+  #   req(RV$sensorLocs)
+  # 
+  #   sdf <- RV$sensorLocs
+  # 
+  #   labs <- lapply(seq(nrow(sdf)), function(i) {
+  #     paste0( '<li>Site Name : ', sdf[i, "SiteName"], '</li>',
+  #             '<li>Provider : ', sdf[i, "SensorGroup"], '</li>',
+  #             '<li>Backend : ', sdf[i, "Backend"], '</li>',
+  #             '<li>Access : ', sdf[i, "Access"], '</li>',
+  #             '<li>Site ID : ', sdf[i, "SiteID"], '</li>'
+  #             #,'<li>Available Sensors : ',  paste(tsens, collapse = ', '), '</li>'
+  #     )
+  #   })
+  #   
+  #   #colCnt <- length(unique(sdf[,input$SensorLabel]))
+  #   #colCats <- unique(sdf[,input$SensorLabel])
+  #   colCnt <- length(unique(sdf[,'SensorGroup']))
+  #   colCats <- unique(sdf[,'SensorGroup'])
+  #   colField <- sdf[,'SensorGroup']
+  #   factpal <-colorFactor(RColorBrewer::brewer.pal(colCnt, 'Spectral'), colField)
+  #  print( head(sdf))
+  # 
+  #   proxy <- leafletProxy("moistureMap", data = RV$sensorLocs)
+  #   proxy %>% clearGroup("All Sensors")
+  #   #proxy %>% clearMarkers()
+  #   #proxy %>% clearControls()
+  # 
+  #   proxy %>% addCircleMarkers(   lng = ~Longitude, lat = ~Latitude,
+  #                                    label = lapply(labs, HTML),
+  #                                    stroke = FALSE, 
+  #                                    fillOpacity = 1,
+  #                                    color = factpal(sdf[,'SensorGroup']), 
+  #                                    radius = 4, 
+  #                                    layerId = paste0(sdf$SiteID),
+  #                                    group = "All Sensors" )  %>%
+  #   leaflet::addLegend("bottomleft", pal = factpal, values = colCats,title = 'SensorGroup', group = "All Sensors")
+  # })
+  # }
       
   # Use a separate observer to recreate the legend as needed.
   # observe({
@@ -516,90 +544,90 @@ server <- function(input, output,session) {
   
 
   ################  Get data from Clicking on a sensor  #################
- observe({
-   click<-input$moistureMap_marker_click
-   if(is.null(click))
-     return()
-   
-   RV$currentTS <- NULL
-   
-   sid <- click$id
-   
-     isolate({
-       DataType <- input$SelectedStreamType
-     })
-     
-     print('sensordrill')
-     
-     shinyBS::createAlert(session, "progressAlert", "chartAlert", title = "", content = paste0("<div id='zs1' ><img src=spinner.gif> Retrieving ", DataType ," data for ", sid, " .....</div>"), append = FALSE)
-     
-     minDateShiny <- input$moistureDateRange[[1]][1]
-     maxDateShiny  <- input$moistureDateRange[[2]][1]
-     sd <- str_split(minDateShiny, '-')
-     isoSDate = paste0(sd[[1]][1], '-', sd[[1]][2], '-', sd[[1]][3], 'T00:00:00')
-     ed <- str_split(maxDateShiny, '-')
-     isoEDate = paste0(ed[[1]][1], '-', ed[[1]][2], '-', ed[[1]][3], 'T23:59:59')
-     
-     
-     url <- paste0(sensorFederation_Server, "/getSensorDataStreams?siteid=", sid,"&sensortype=", DataType,"&startdate=", isoSDate, '&enddate=', isoEDate, "&aggperiod=days")
-     
-     RV$Log <-Logit('Get timeseries data from clicking on a sensor', url)
-     stnsRaw <- getURL(paste0(url))
-     
-     if(!grepl('error', stnsRaw, ignore.case = F)){
-       
-       ts <- convertJSONtoTS(stnsRaw, "%Y-%m-%d %H:%M:%S")
-
-       if(nrow(ts) > 0){
-         RV$currentTS <- ts
-         
-         url <- paste0(sensorFederation_Server, '/getSensorLocations?sensortype=', DataType, '&siteid=', sid, '&usr=',RV$Usr, '&pwd=',RV$Pwd)
-         d <- getURL(url)
-         SI <- fromJSON(d)
-         
-         #curl -X GET "http://esoil.io/SensorFederationWebAPI/SensorAPI/getSensorInfo?siteid=15117&sensortype=Soil-Moisture" 
-         url2 <- paste0(sensorFederation_Server, '/getSensorInfo?sensortype=', DataType, '&siteid=', sid, '&usr=',RV$Usr, '&pwd=',RV$Pwd)
-         RV$Log <-Logit('Get metadata for a specific sensor', url)
-         d2 <- getURL(url2)
-         SI2 <- fromJSON(d2)
-         
-         sli <- list()
-         
-         sli$SiteID <- SI$SiteID[1]
-         sli$SiteName <- SI$SiteName[1]
-         sli$Provider <- SI$Provider [1]
-         sli$Backend <- SI$Backend[1]
-         sli$Access  <- SI$Access [1]
-         sli$Longitude <- SI$Longitude[1]
-         sli$Latitude  <- SI$Latitude [1]
-         sli$Active  <- SI$Active [1]
-         sli$Owner <- SI$Owner[1]
-         sli$Contact <- SI$Contact[1]
-         sli$ProviderURL <- SI$ProviderURL[1]
-         sli$StartDate <- SI$StartDate[1]
-         sli$EndDate <- SI$EndDate[1]
-         #sli$Description <- SI$Description[1]
-         #sli$Units <- SI2[1,]$Units
-         sli$Description <- SI$Description[1]
-         
-         sli$Units <- SI2[1,]$Units
-         sli$DataType <- SI2[1,]$DataType
-         sli$SensorNames <- paste(SI2$SensorName, collapse = '; ')
-         
-         RV$currentSiteInfo <- sli
-
-         
-       }else{
-         RV$currentTS <- NULL
-         RV$currentSiteInfo <- NULL
-       }
-     }
-     else{
-       RV$currentTS <- NULL
-       RV$currentSiteInfo <- NULL
-     }
-     shinyBS::closeAlert(session, "chartAlert")
-})
+#  observe({
+#    click<-input$moistureMap_marker_click
+#    if(is.null(click))
+#      return()
+#    
+#    RV$currentTS <- NULL
+#    
+#    sid <- click$id
+#    
+#      isolate({
+#        DataType <- input$SelectedStreamType
+#      })
+#      
+#      print('sensordrill')
+#      
+#      shinyBS::createAlert(session, "progressAlert", "chartAlert", title = "", content = paste0("<div id='zs1' ><img src=spinner.gif> Retrieving ", DataType ," data for ", sid, " .....</div>"), append = FALSE)
+#      
+#      minDateShiny <- input$moistureDateRange[[1]][1]
+#      maxDateShiny  <- input$moistureDateRange[[2]][1]
+#      sd <- str_split(minDateShiny, '-')
+#      isoSDate = paste0(sd[[1]][1], '-', sd[[1]][2], '-', sd[[1]][3], 'T00:00:00')
+#      ed <- str_split(maxDateShiny, '-')
+#      isoEDate = paste0(ed[[1]][1], '-', ed[[1]][2], '-', ed[[1]][3], 'T23:59:59')
+#      
+#      
+#      url <- paste0(sensorFederation_Server, "/getSensorDataStreams?siteid=", sid,"&sensortype=", DataType,"&startdate=", isoSDate, '&enddate=', isoEDate, "&aggperiod=days")
+#      
+#      RV$Log <-Logit('Get timeseries data from clicking on a sensor', url)
+#      stnsRaw <- getURL(paste0(url))
+#      
+#      if(!grepl('error', stnsRaw, ignore.case = F)){
+#        
+#        ts <- convertJSONtoTS(stnsRaw, "%Y-%m-%d %H:%M:%S")
+# 
+#        if(nrow(ts) > 0){
+#          RV$currentTS <- ts
+#          
+#          url <- paste0(sensorFederation_Server, '/getSensorLocations?sensortype=', DataType, '&siteid=', sid, '&usr=',RV$Usr, '&pwd=',RV$Pwd)
+#          d <- getURL(url)
+#          SI <- fromJSON(d)
+#          
+#          #curl -X GET "http://esoil.io/SensorFederationWebAPI/SensorAPI/getSensorInfo?siteid=15117&sensortype=Soil-Moisture" 
+#          url2 <- paste0(sensorFederation_Server, '/getSensorInfo?sensortype=', DataType, '&siteid=', sid, '&usr=',RV$Usr, '&pwd=',RV$Pwd)
+#          RV$Log <-Logit('Get metadata for a specific sensor', url)
+#          d2 <- getURL(url2)
+#          SI2 <- fromJSON(d2)
+#          
+#          sli <- list()
+#          
+#          sli$SiteID <- SI$SiteID[1]
+#          sli$SiteName <- SI$SiteName[1]
+#          sli$Provider <- SI$Provider [1]
+#          sli$Backend <- SI$Backend[1]
+#          sli$Access  <- SI$Access [1]
+#          sli$Longitude <- SI$Longitude[1]
+#          sli$Latitude  <- SI$Latitude [1]
+#          sli$Active  <- SI$Active [1]
+#          sli$Owner <- SI$Owner[1]
+#          sli$Contact <- SI$Contact[1]
+#          sli$ProviderURL <- SI$ProviderURL[1]
+#          sli$StartDate <- SI$StartDate[1]
+#          sli$EndDate <- SI$EndDate[1]
+#          #sli$Description <- SI$Description[1]
+#          #sli$Units <- SI2[1,]$Units
+#          sli$Description <- SI$Description[1]
+#          
+#          sli$Units <- SI2[1,]$Units
+#          sli$DataType <- SI2[1,]$DataType
+#          sli$SensorNames <- paste(SI2$SensorName, collapse = '; ')
+#          
+#          RV$currentSiteInfo <- sli
+# 
+#          
+#        }else{
+#          RV$currentTS <- NULL
+#          RV$currentSiteInfo <- NULL
+#        }
+#      }
+#      else{
+#        RV$currentTS <- NULL
+#        RV$currentSiteInfo <- NULL
+#      }
+#      shinyBS::closeAlert(session, "chartAlert")
+# })
   
   
   
@@ -616,7 +644,7 @@ server <- function(input, output,session) {
     
     if(input$ProductType != 'None'){
       
-      cproduct <- productsDF[productsDF$Name==input$ProductType,4][1]
+      cproduct <- productsDF[productsDF$Name==input$ProductType,]$ProductCode
 
       minDateShiny <- input$moistureDateRange[[1]][1]
       maxDateShiny  <- input$moistureDateRange[[2]][1]
@@ -624,15 +652,12 @@ server <- function(input, output,session) {
       minDate <- paste0(sd[[1]][3], '-', sd[[1]][2], '-', sd[[1]][1])
       ed <- str_split(maxDateShiny, '-')
       maxDate <- paste0(ed[[1]][3], '-', ed[[1]][2], '-', ed[[1]][1])
-      
-      
-      rec <- productsDF[productsDF$Name==input$ProductType,][1,]
-      
-      print(rec)
 
      shinyBS::createAlert(session, "progressAlert", "drillingAlertInstance", title = "", content = paste0("<img src=wait.gif>Retrieving timeseries data from SMIPS at ",click$lng, " ", click$lat ), append = FALSE)
-     urlSMIPS <- paste0('http://esoil.io/SMIPS_API/SMIPS/TimeSeries?product=', cproduct ,'&longitude=',click$lng ,'&latitude=', click$lat ,'&sdate=', minDate ,'&edate=', maxDate)
-     resp <- getURL(urlSMIPS)
+     urlSMIPS <- paste0('http://esoil.io/SMIPS_API/SMIPS/TimeSeries?product=', input$ProductType ,'&longitude=',click$lng ,'&latitude=', click$lat ,'&sdate=', minDate ,'&edate=', maxDate)
+     
+     print(urlSMIPS)
+     resp <- getURL(URLencode(urlSMIPS))
      print(resp)
       is_error <- grepl('"error":', substr(resp, 1, 9), fixed=TRUE)
       if (isTRUE(is_error))
@@ -767,8 +792,8 @@ server <- function(input, output,session) {
       
       # shinyalert("Oops!", "Please provide a numeric value for the Transformation.", type = "error")
       # 
-      # product <- input$ProductType
-      # mDate <- input$moistureMapDate
+       product <- input$ProductType
+       mDate <- input$moistureMapDate
       # yr <- paste0( substr(mDate, 1, 4))
       # prod <- productsDF[productsDF$Name==product,]
       #  rname <- paste0(prod$Organisation, '_', prod$ProductCode, '_', mDate , '.tif')
@@ -785,15 +810,25 @@ server <- function(input, output,session) {
         # yr <- paste0( substr(mDate, 1, 4))
         # prod <- productsDF[productsDF$Name==product,]
         # 
-        
-        url <- 'http://esoil.io/SMIPS_API/SMIPS/Raster?date=01-01-2019&product=SMIPS-RawIndex&resFactor=50'
+        url <-  'http://esoil.io/thredds/wcs/SMIPSall/SMIPSv0.5.nc?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&FORMAT=GeoTIFF_Float&COVERAGE=Blended_Precipitation&CRS=OGC:CRS84&TIME=2020-01-01T00:00:00Z'
+       # url <- 'http://esoil.io/SMIPS_API/SMIPS/Raster?date=01-01-2019&product=SMIPS-RawIndex&resFactor=50'
         
        # rname <- paste0(prod$Organisation, '_', prod$ProductCode, '_', mDate , '.tif')
         #fullname <- paste(SMIPSDataRoot , prod$Organisation, prod$ProductCode, 'Final', yr, rname,   sep='/')
-       
-         r <- raster(url)
-         print(r)
-         writeRaster(r, file)
+        url <-  'http://esoil.io/thredds/wcs/SMIPSall/SMIPSv0.5.nc?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&FORMAT=GeoTIFF_Float&COVERAGE=Blended_Precipitation&CRS=OGC:CRS84&TIME=2020-01-01T00:00:00Z'
+        
+        
+        #res <- paste0('&RESX=', pres, '&RESY=', pres)
+        bbox <- paste0(input$moistureMap_bounds$west, ',', input$moistureMap_bounds$south, ',',input$moistureMap_bounds$east, ',',input$moistureMap_bounds$north )
+        
+        print('starting download....')
+
+        #writeRaster(r, file, overwrite=T)
+         #writeRaster(r, file)
+        print(url)
+        outFile <- paste0(tempfile(), '.tif')
+        download.file(URLencode(paste0(url, '&BBOX=', bbox)), outFile, mode = 'wb', quiet = T)
+        file.copy(outFile, file)
       }else{
         
         shinyalert("Oops!", "Please provide a numeric value for the Transformation.", type = "error")
@@ -946,44 +981,44 @@ server <- function(input, output,session) {
 
 
   
-  
-  observeEvent(input$retrieveTSData, {
-
-    withBusyIndicatorServer("retrieveTSData", {
-    
-    RV$RefreshSensorDataDownload = F
-    sitename <- input$SelectedSiteDataDownload
-    
-    sid <- RV$sensorLocs[RV$sensorLocs$SiteName==sitename,1][1]
-    DataType <- input$SelectedStreamType
-    
-    minDateShiny <- input$moistureDateRange[[1]][1]
-    maxDateShiny  <- input$moistureDateRange[[2]][1]
-    sd <- str_split(minDateShiny, '-')
-    isoSDate <- paste0(sd[[1]][1], '-', sd[[1]][2], '-', sd[[1]][3], 'T00:00:00')
-    ed <- str_split(maxDateShiny, '-')
-    isoEDate <- paste0(ed[[1]][1], '-', ed[[1]][2], '-', ed[[1]][3], 'T23:59:59')
-    
-    url <- paste0(sensorFederation_Server, "/getSensorDataStreams?siteid=", sid,"&sensortype=", DataType,"&startdate=", isoSDate, '&enddate=', isoEDate, "&aggperiod=days")
-    stnsRaw <- getURL(paste0(url))
-    RV$Log <-Logit(' Get timeseries data from a specific sensor', url)
-    
-    if(!grepl('error', stnsRaw, ignore.case = F)){
-    ts <- convertJSONtoDF(stnsRaw)
-    
-    RV$currentDownloadTS <- ts
-
-    RV$RefreshSensorDataDownload <- NULL
-    
-    }else{
-      msg <- fromJSON(stnsRaw)
-
-      stop(paste0("There was a problem retrieving the requested sensor data - ", msg$error))
-    }
-    
-    })
-    
-  })
+  # 
+  # observeEvent(input$retrieveTSData, {
+  # 
+  #   withBusyIndicatorServer("retrieveTSData", {
+  #   
+  #   RV$RefreshSensorDataDownload = F
+  #   sitename <- input$SelectedSiteDataDownload
+  #   
+  #   sid <- RV$sensorLocs[RV$sensorLocs$SiteName==sitename,1][1]
+  #   DataType <- input$SelectedStreamType
+  #   
+  #   minDateShiny <- input$moistureDateRange[[1]][1]
+  #   maxDateShiny  <- input$moistureDateRange[[2]][1]
+  #   sd <- str_split(minDateShiny, '-')
+  #   isoSDate <- paste0(sd[[1]][1], '-', sd[[1]][2], '-', sd[[1]][3], 'T00:00:00')
+  #   ed <- str_split(maxDateShiny, '-')
+  #   isoEDate <- paste0(ed[[1]][1], '-', ed[[1]][2], '-', ed[[1]][3], 'T23:59:59')
+  #   
+  #   url <- paste0(sensorFederation_Server, "/getSensorDataStreams?siteid=", sid,"&sensortype=", DataType,"&startdate=", isoSDate, '&enddate=', isoEDate, "&aggperiod=days")
+  #   stnsRaw <- getURL(paste0(url))
+  #   RV$Log <-Logit(' Get timeseries data from a specific sensor', url)
+  #   
+  #   if(!grepl('error', stnsRaw, ignore.case = F)){
+  #   ts <- convertJSONtoDF(stnsRaw)
+  #   
+  #   RV$currentDownloadTS <- ts
+  # 
+  #   RV$RefreshSensorDataDownload <- NULL
+  #   
+  #   }else{
+  #     msg <- fromJSON(stnsRaw)
+  # 
+  #     stop(paste0("There was a problem retrieving the requested sensor data - ", msg$error))
+  #   }
+  #   
+  #   })
+  #   
+  # })
   
   
   output$siteTimeSeriesTable  = renderRHandsontable({
@@ -1058,10 +1093,12 @@ left: 70px;
 
                             fluidRow( column(12, actionButton("init", "Download Map Data", icon = icon("download")),
                             downloadButton("downloadRasterData", "Download", style = "visibility: hidden;")
+                           
+                            
                             )),
                              #fluidRow( downloadButton('downloadRasterData', 'Download Map Data')),
                              fluidRow( HTML('&nbsp;')),
-
+                            fluidRow(div(style = "text-align:left;", uiOutput("wWCS"))),
                               if (isTRUE(ENABLE_SITES)) {
                              fluidRow(column(12, actionLink("toggleSensorSettingsInfo", "Sensor Settings")),
 

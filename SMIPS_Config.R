@@ -1,29 +1,22 @@
 
 #http://esoil.io/thredds/catalog/SMIPSall/catalog.html?dataset=SMIPS/SMIPSv0.5.nc
 
+ALWAYS_DRILL <- TRUE
+ENABLE_SITES <- FALSE
+SHOW_WELCOME_MESSAGE <- FALSE
+SHOW_GPS_BUTTON <- FALSE
+
 
 debugMode <<- F
-helpColour <- 'green'
+#helpColour <- 'green'
 
 
 useWMS=T
+configURL <- 'http://esoil.io/SMIPS_API/SMIPS/Config?pwd=hdei-44%24%26lDDDF%401%21KLB55hds%23%2B-3hde'
 #http://esoil.io/thredds/wms/SMIPSall/SMIPSv0.5.nc?&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&layers=Openloop_Volumetric_SM&CRS=CRS:84&WIDTH=800&HEIGHT=600&FORMAT=image/png&bbox=112.9,-43.7,154.0,-9.0&TIME=2019-07-21T00:00:00.000Z&styles=boxfill/sm_blues&TRANSPARENT=true
 
 
-# This loads required function, settings and some data tables (frames)
 
-
-
-source('appUtils.R')
-#source('SMIPSFunctions.R')
-source("helpers.R")
-
-#defaultUser <- 'Admin'
-#defaultPwd <- 'ross'
-defaultUser <- 'Public'
-defaultPwd <- 'Public'
-#defaultMap <- 'None'
-defaultMap <- 'CSIRO - SMIPS-Raw'
 
 adminName <- 'Ross Searle'
 adminEmail <- 'ross.searle@csiro.au'
@@ -46,7 +39,7 @@ maxPoints <- 100000
 
 #moistureMapServer <- 'http://ternsoils.nexus.csiro.au:8080'
 #SMIPS_WCS_Server <- 'http://ternsoils.nexus.csiro.au/cgi-bin/mapserv.exe?map=e:/MapServer/SMIPS/moisture.map'
-sensorFederation_Server <- 'http://esoil.io/SensorFederationWebAPI/SensorAPI'
+
 
 SMIPSAPIServer <- 'http://esoil.io/SMIPS_API/SMIPS'
 
@@ -62,9 +55,7 @@ AusRes <- 0.01
 Ausnumrows <- 3474
 Ausnumcols <- 4110
 
-productsDF <- read.csv(paste0(deployDir, '/ConfigFiles/RasterServices_config.csv'), stringsAsFactors=F)
-productsDF <- productsDF[!startsWith(productsDF$Name, "!"),]
-productsDF <- productsDF[order(productsDF$ProductOrder),]
+
 
 unitsDF <- read.csv('ConfigFiles/units.csv')
 
