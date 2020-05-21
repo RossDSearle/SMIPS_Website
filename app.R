@@ -95,6 +95,45 @@ server <- function(input, output,session) {
     # }
   })
   
+  
+  output$downloadRasterData <- downloadHandler(
+    
+    filename = function() {
+      
+      product <- input$ProductType
+      mDate <- input$moistureMapDate
+      rname <- paste0(product, '_', mDate , '.tif')
+      
+    },
+    content = function(file) {
+      
+      if(input$ProductType != 'None'){
+        
+        shinyBS::createAlert(session, "alert", "waitalert", title = "", content = paste0("<div id='zs1'><img src=wait.gif>Downloading data", " .....</div>"), append = FALSE, dismiss = F)
+        
+        product <- input$ProductType
+        mDate <- input$moistureMapDate
+        prod <- productsDF[productsDF$Name==product,]
+        rname <- paste0(product, '_', mDate , '.tif')
+        
+        url <-  paste0('http://esoil.io/thredds/wcs/SMIPSall/SMIPSv0.5.nc?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&FORMAT=GeoTIFF_Float&COVERAGE=Blended_Precipitation&CRS=OGC:CRS84&TIME=2020-01-01T00:00:00Z')
+
+       # url <-  'http://esoil.io/thredds/wcs/SMIPSall/SMIPSv0.5.nc?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&FORMAT=GeoTIFF_Float&COVERAGE=Blended_Precipitation&CRS=OGC:CRS84&TIME=2020-01-01T00:00:00Z'
+        
+        
+        #res <- paste0('&RESX=', pres, '&RESY=', pres)
+        bbox <- paste0(input$moistureMap_bounds$west, ',', input$moistureMap_bounds$south, ',',input$moistureMap_bounds$east, ',',input$moistureMap_bounds$north )
+ 
+        outFile <- paste0(tempfile(), '.tif')
+        download.file(URLencode(paste0(url, '&BBOX=', bbox)), outFile, mode = 'wb', quiet = T)
+        shinyBS::closeAlert(session, "waitalert")
+        file.copy(outFile, file)
+      }else{
+      }
+      
+    }
+  )
+  
   # observe({
   #   req(RV$Usr,RV$Pwd)
   # 
@@ -783,60 +822,7 @@ server <- function(input, output,session) {
   #     write.csv(data, file)
   #   }
   # )
-  
-  output$downloadRasterData <- downloadHandler(
-    
-   # check <- function(){shinyalert("Oops!", "Please provide a numeric value for the Transformation.", type = "error")},
-    
-    filename = function() {
-      
-      # shinyalert("Oops!", "Please provide a numeric value for the Transformation.", type = "error")
-      # 
-       product <- input$ProductType
-       mDate <- input$moistureMapDate
-      # yr <- paste0( substr(mDate, 1, 4))
-      # prod <- productsDF[productsDF$Name==product,]
-      #  rname <- paste0(prod$Organisation, '_', prod$ProductCode, '_', mDate , '.tif')
-      #  paste0(rname)
-       
-       paste('test.tif')
-       
-    },
-    content = function(file) {
-      
-      if(input$ProductType != 'None'){
-        # product <- input$ProductType
-        # mDate <- input$moistureMapDate
-        # yr <- paste0( substr(mDate, 1, 4))
-        # prod <- productsDF[productsDF$Name==product,]
-        # 
-        url <-  'http://esoil.io/thredds/wcs/SMIPSall/SMIPSv0.5.nc?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&FORMAT=GeoTIFF_Float&COVERAGE=Blended_Precipitation&CRS=OGC:CRS84&TIME=2020-01-01T00:00:00Z'
-       # url <- 'http://esoil.io/SMIPS_API/SMIPS/Raster?date=01-01-2019&product=SMIPS-RawIndex&resFactor=50'
-        
-       # rname <- paste0(prod$Organisation, '_', prod$ProductCode, '_', mDate , '.tif')
-        #fullname <- paste(SMIPSDataRoot , prod$Organisation, prod$ProductCode, 'Final', yr, rname,   sep='/')
-        url <-  'http://esoil.io/thredds/wcs/SMIPSall/SMIPSv0.5.nc?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&FORMAT=GeoTIFF_Float&COVERAGE=Blended_Precipitation&CRS=OGC:CRS84&TIME=2020-01-01T00:00:00Z'
-        
-        
-        #res <- paste0('&RESX=', pres, '&RESY=', pres)
-        bbox <- paste0(input$moistureMap_bounds$west, ',', input$moistureMap_bounds$south, ',',input$moistureMap_bounds$east, ',',input$moistureMap_bounds$north )
-        
-        print('starting download....')
 
-        #writeRaster(r, file, overwrite=T)
-         #writeRaster(r, file)
-        print(url)
-        outFile <- paste0(tempfile(), '.tif')
-        download.file(URLencode(paste0(url, '&BBOX=', bbox)), outFile, mode = 'wb', quiet = T)
-        file.copy(outFile, file)
-      }else{
-        
-        shinyalert("Oops!", "Please provide a numeric value for the Transformation.", type = "error")
-        NULL
-      }
-      
-    }
-  )
   
   
   output$urlText <- renderText({
@@ -1059,7 +1045,26 @@ position: relative;
 top: 10px;
 left: 70px;
 }')
-  ), # End </head>
+  ), 
+  
+  tags$style(
+    
+    HTML(".alert {
+                         background-color: #F5F5F5;
+                         padding: 0px; margin-bottom: 10px;
+                         color: black;
+                         height: 50px;
+                     } 
+             
+             .alert-info {
+             border-color: #F5F5F5;
+             }"
+    )
+  )
+  
+  
+  
+  # End </head>
 
   # Start <body>
   # Header above panes (but below the nav)
@@ -1092,7 +1097,8 @@ left: 70px;
                             #  selectInput("SensorLabel", "Sensor Label ", sensorLabels, selected = 'SensorGroup', width= 120),
 
                             fluidRow( column(12, actionButton("init", "Download Map Data", icon = icon("download")),
-                            downloadButton("downloadRasterData", "Download", style = "visibility: hidden;")
+                            downloadButton("downloadRasterData", "Download", style = "visibility: hidden;"),
+                            fluidRow(div(style = "valign:top; height:50px;background-color: #F5F5F5;", bsAlert("alert"))),
                            
                             
                             )),
