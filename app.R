@@ -120,7 +120,7 @@ server <- function(input, output,session) {
       
       if(input$ProductType != 'None'){
         
-        shinyBS::createAlert(session, "alert", "waitalert", title = "", content = paste0("<div id='zs1'><img src=wait.gif>Downloading data", " .....</div>"), append = FALSE, dismiss = F)
+        shinyBS::createAlert(session, "alert", "waitalert", title = "", content = paste0("<div id='zs1'><img src=wait.gif>&nbsp;&nbsp;Downloading data", " .....</div>"), append = FALSE, dismiss = F)
         
         product <- input$ProductType
         mDate <- input$moistureMapDate
