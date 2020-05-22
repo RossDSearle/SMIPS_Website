@@ -62,7 +62,7 @@ server <- function(input, output,session) {
   SMIPSDrillbtn <- if (isTRUE(ALWAYS_DRILL)) reactiveVal('SmipsDrillOn') else reactiveVal('SmipsDrillOff')
 
 
-  
+ ##############      DATA DOWNLOAD FUNCTIONALITY    ############################################ 
   observeEvent(input$initTS, {
     if (is.null(RV$currentTS)) {
       showModal(
@@ -140,24 +140,9 @@ server <- function(input, output,session) {
     }
   )
   
-  # output$wWCS <- renderUI({
-  #   
-  #   pres <- 0.0008333333333467680612
-  #   shiny::tags$html()
-  #   url <-  'http://esoil.io/thredds/wcs/SMIPSall/SMIPSv0.5.nc?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&FORMAT=GeoTIFF_Float&COVERAGE=Blended_Precipitation&CRS=OGC:CRS84&TIME=2020-01-01T00:00:00Z'
-  #   #res <- paste0('&RESX=', pres, '&RESY=', pres)
-  #   bbox <- paste0(input$moistureMap_bounds$west, ',', input$moistureMap_bounds$south, ',',input$moistureMap_bounds$east, ',',input$moistureMap_bounds$north )
-  #   print(input$moistureMap_bounds)
-  #   # tags$a(paste0("Download ", " Current Extent"), href=paste0(url, '&BBOX=', bbox), html(' download="something.txt"'))
-  #   HTML( paste0('<a href=', url,  ' download="w3logohhhh.tif">Test</a>') )
-  # }) 
   
-
-
-  
-  
-  
-  ################### Render the Map  #################
+################### MAP FUNCTIONS  ################# 
+################### Render the Map  #################
 
 
   observe({
@@ -236,7 +221,7 @@ server <- function(input, output,session) {
 
   
   
-  # Use a separate observer to recreate wms maps as needed
+###################### Use a separate observer to recreate wms maps as needed  ######
   observe({
 
     mDate <- input$moistureMapDate
@@ -303,20 +288,7 @@ server <- function(input, output,session) {
         proxy <- addControl(proxy, position = "bottomright", layerId = "overlay_transparency_slider", className = "info", sliderCtrl)
         RV$RecreateSlider <- FALSE
       }
-      
-      
-      
-      #proxy %>% leaflet::addLegend(pal = pal, values = c("Wet", 'Dry'), title = "Moisture Map")
-      
-
-      
-      # proxy %>% addWMSTiles(wmsurl, group= "Moisture Maps",
-      #                       layers = cproduct,
-      #                       options = WMSTileOptions(format = "image/png", transparent = T ,opacity = trans),
-      #                       attribution = "    Soil Moisture Estimates by CSIRO")
-      
     }
-    
   })     
       
       
@@ -339,13 +311,15 @@ server <- function(input, output,session) {
      }
 
      imageLoc <- paste0(wmsServer, "?VERSION=", wmsVersion, "&SERVICE=WMS&REQUEST=GetLegendGraphic&COLORBARONLY=true&WIDTH=10&HEIGHT=650&LAYER=",prod,"&PALETTE=",wmsStyle,"&FORMAT=image%2Fpng")
-
+#imageLoc <- './Legends/ANU_Ssoil_Legend.png'
 
     tags$img(src = imageLoc)
    } else {
     tags$img(src = '')
    }
   })
+  
+  
   # output$wmsLegend <- renderImage({
   #   if(input$ProductType != 'None'){
   #
@@ -361,12 +335,12 @@ server <- function(input, output,session) {
   #     download.file(legendurl, destfile = '/tmp/a.png', mode = 'wb')
   #     # legendurl <- 'http://dapds00.nci.org.au/thredds/wms/ub8/au/OzWALD/daily/OzWALD.daily.Ssoil.2017.nc?REQUEST=GetLegendGraphic&LAYER=Ssoil&PALETTE=nrm_temperature_reverse'
   #
-  #     return(list(
-  #       # src = "/srv/shiny-server/SMIPS/www/Legends/CSIRO_Wetness-Index_Legend.png",
-  #       src = 'http://esoil.io/thredds/wms/SMIPSall/SMIPSv0.5.nc?VERSION=1.3.0&SERVICE=WMS&REQUEST=GetLegendGraphic&COLORBARONLY=True&LAYER=Openloop_Wetness_Index&FORMAT=image%2Fpng',
-  #       filetype = "image/png",
-  #       alt = "Legend for the currently displayed map" ))
-  #   }
+      # list(
+      #    src = "C:/Users/sea084/Dropbox/RossRCode/Git/Shiny/SMIPS/www/Legends/ANU_Ssoil_Legend.png",
+      #   #src = 'http://esoil.io/thredds/wms/SMIPSall/SMIPSv0.5.nc?VERSION=1.3.0&SERVICE=WMS&REQUEST=GetLegendGraphic&COLORBARONLY=True&LAYER=Openloop_Wetness_Index&FORMAT=image%2Fpng',
+      #   filetype = "image/png",
+      #   alt = "Legend for the currently displayed map" )
+   # }
   #   else{
   #     return(list(
   #       #src = "/srv/shiny-server/SMIPS/www/Legends/CSIRO_Wetness-Index_Legend.png",
@@ -379,7 +353,7 @@ server <- function(input, output,session) {
 
   
 
-  
+  ##############      MAP QUERYING FUNCTIONS  ##############################
   ################## Render the Chart from a map drill  ##################
   output$dummyDygraph <- renderDygraph({})
   output$moisitureChart1 <- renderDygraph({
@@ -459,8 +433,6 @@ server <- function(input, output,session) {
       if (isTRUE(is_error))
         return()
 
-    #  RV$Log <- Logit('Get timeseries data from drilling a map pixel',  urlSMIPS)
-
       ts <- convertJSONtoTS(resp, "%Y-%m-%dT%H:%M:%S")
 
       SI <- fromJSON(resp)
@@ -501,8 +473,8 @@ server <- function(input, output,session) {
   })
   
   
-  
-  ################$  Update List Choices   ###############################
+  ############################    DYNAMIC IU FUNCTIONS   ##############
+  ################ Update List Choices   ###############################
   # update the MapProduct List choices depending on login  
   observe({
     updateSelectInput(session, "ProductType", choices =  RV$AvailableMapProducts, selected = defaultMap )
