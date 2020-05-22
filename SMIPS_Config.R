@@ -19,7 +19,7 @@ adminEmail <- 'ross.searle@csiro.au'
 defaultDisplayDate <- 2 # days before today
 
 
-useWMS = T
+
 
 ######  CSIRO Thredds serve info  ########################
 # not used but leaving here for now
