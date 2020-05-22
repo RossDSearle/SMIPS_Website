@@ -89,7 +89,10 @@ server <- function(input, output,session) {
       print(input$moistureMap_bounds)
      # tags$a(paste0("Download ", " Current Extent"), href=paste0(url, '&BBOX=', bbox), html(' download="something.txt"'))
       
-     HTML( paste0('<a href=', url,  ' download="w3logohhhh.tif">Test</a>') )
+     #HTML( paste0('<a href=', url,  ' download="w3logohhhh.tif">Test</a>') )
+     HTML( paste0('<a href="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" download>
+       <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="W3Schools" width="104" height="142">
+       </a>'))
     # }else{
     #   tags$html("")
     # }
