@@ -25,8 +25,8 @@ library(lubridate)
 library(raster)
 library(httr)
 library(shinyMobile)
+library(shinyWidgets)
 
-#product <- 'Openloop_Volumetric_SM'
 
 machineName <- as.character(Sys.info()['nodename'])
 if (machineName=='soils-discovery') {
@@ -285,13 +285,15 @@ server <- function(input, output,session) {
       leaflet::addLegend(pal = pal_rev, values = seq(0, 1, .1), title = "Moisture Map", labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
       }
       if (RV$RecreateSlider == TRUE) {
-        sliderCtrl <- div(id = "slider_move_catcher", sliderInput("moistureMapTrans", width=220, label = HTML('<div style="width: 200px; maxheight: 10px; position: absolute; margin: 0px auto -70px 70px;">Overlay Opacity</div>'), ticks = F, min = 0.0,  max = 1.0, value = trans, animate = FALSE),
-                          onmouseover = "window.moistureMap.dragging.disable();Shiny.onInputChange('SMIPSDrillbtn', 'SmipsDrillOff'); $('.leaflet-container').css('cursor','');", onmouseout = "window.moistureMap.dragging.enable();Shiny.onInputChange('SMIPSDrillbtn', 'SmipsDrillOn');$('.leaflet-container').css('cursor','crosshair');")
+         sliderCtrl <- div(id = "slider_move_catcher", sliderInput("moistureMapTrans", width=220, label = HTML('<div style="width: 200px; maxheight: 10px; position: absolute; margin: 0px auto -70px 70px;">Overlay Opacity</div>'), ticks = F, min = 0.0,  max = 1.0, value = trans, animate = FALSE),
+                           onmouseover = "window.moistureMap.dragging.disable();Shiny.onInputChange('SMIPSDrillbtn', 'SmipsDrillOff'); $('.leaflet-container').css('cursor','');", onmouseout = "window.moistureMap.dragging.enable();Shiny.onInputChange('SMIPSDrillbtn', 'SmipsDrillOn');$('.leaflet-container').css('cursor','crosshair');")
         proxy <- addControl(proxy, position = "bottomright", layerId = "overlay_transparency_slider", className = "info", sliderCtrl)
         RV$RecreateSlider <- FALSE
       }
     }
   })     
+  
+
       
       
   
@@ -562,7 +564,11 @@ left: 70px;
                                   fluidRow( HTML('&nbsp;<br>')),
                                   fluidRow(selectInput("ProductType", "Map Product Type ", c('None'), selected = defaultMap, width = "100%")),
                                   fluidRow(dateInput('moistureMapDate', label = 'Map Date', format = 'dd-mm-yyyy', value = Sys.Date()-defaultDisplayDate, width = 130)),
-
+                                  # fluidRow(noUiSliderInput(inputId = "moistureMapTrans",
+                                  #                 label = "Transparency",
+                                  #                 min = 0, max = 100,
+                                  #                 value = 20,
+                                  #                 tooltips = F)),
                                  
                                   fluidRow( column(12, actionLink("init", "Download Map Data", icon = icon("download")))),
                                   fluidRow( HTML('&nbsp;<br>')),
@@ -578,7 +584,8 @@ left: 70px;
                                   #fluidRow(div(style = "text-align:left;", uiOutput("wWCS")))
                                   fluidRow(div(style = "valign:top; height:50px;background-color: #F5F5F5;", bsAlert("alert"))),
                                   fluidRow( HTML('&nbsp;<br>')),
-                                  fluidRow( HTML('&nbsp;<br>')),
+                                  fluidRow( HTML('&nbsp;<br>'))
+                                  
                               )
                             ),
 
