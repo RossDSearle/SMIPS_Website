@@ -7,7 +7,7 @@ SHOW_WELCOME_MESSAGE <- FALSE
 SHOW_GPS_BUTTON <- FALSE
 
 
-debugMode <<- F
+#ebugMode <<- F
 
 THREDDSServer <- 'http://esoil.io/thredds/dodsC/SMIPS/SMIPSv0.5.nc'
 SMIPSAPIServer <- 'http://esoil.io/SMIPS_API/SMIPS'
@@ -17,6 +17,7 @@ configURL <- 'http://esoil.io/SMIPS_API/SMIPS/Config?pwd=hdei-44%24%26lDDDF%401%
 #http://esoil.io/thredds/wms/SMIPSall/SMIPSv0.5.nc?&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&layers=Openloop_Volumetric_SM&CRS=CRS:84&WIDTH=800&HEIGHT=600&FORMAT=image/png&bbox=112.9,-43.7,154.0,-9.0&TIME=2019-07-21T00:00:00.000Z&styles=boxfill/sm_blues&TRANSPARENT=true
 
 
+TsNumDays <- 10
 
 
 adminName <- 'Ross Searle'
