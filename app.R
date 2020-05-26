@@ -286,7 +286,7 @@ server <- function(input, output,session) {
           leaflet::addLegend(pal = pal_rev, values = seq(0, 1, .1), title = "Moisture Map", labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
       }
       if (RV$RecreateSlider == TRUE) {
-        sliderCtrl <- div(id = "slider_move_catcher", sliderInput("moistureMapTrans", width=220, label = HTML('<div style="width: 200px; maxheight: 10px; position: absolute; margin: 0px auto -70px 70px;">Overlay Opacity</div>'), ticks = F, min = 0.0,  max = 1.0, value = trans, animate = FALSE),
+        sliderCtrl <- div(id = "slider_move_catcher", sliderInput("moistureMapTrans", width=220, label = HTML('<div style="width: 180px; max-height: 10px; position: absolute; margin: 0; left: 70px; top: 20px; text-shadow: 0px 0px 2px white; color: #444; font-size: 13px;">Overlay Opacity</div>'), ticks = F, min = 0.0,  max = 1.0, value = trans, animate = FALSE),
                           onmouseover = "window.moistureMap.dragging.disable();Shiny.onInputChange('SMIPSDrillbtn', 'SmipsDrillOff'); $('.leaflet-container').css('cursor','');", onmouseout = "window.moistureMap.dragging.enable();Shiny.onInputChange('SMIPSDrillbtn', 'SmipsDrillOn');$('.leaflet-container').css('cursor','crosshair');")
         proxy <- addControl(proxy, position = "bottomright", layerId = "overlay_transparency_slider", className = "info", sliderCtrl)
         RV$RecreateSlider <- FALSE
@@ -313,12 +313,12 @@ server <- function(input, output,session) {
         wmsStyle <- parts[length(parts)]
       }
       
-      imageLoc <- paste0(wmsServer, "?VERSION=", wmsVersion, "&SERVICE=WMS&REQUEST=GetLegendGraphic&COLORBARONLY=true&WIDTH=10&HEIGHT=650&LAYER=",prod,"&PALETTE=",wmsStyle,"&FORMAT=image%2Fpng")
+      imageLoc <- paste0(wmsServer, "?VERSION=", wmsVersion, "&SERVICE=WMS&REQUEST=GetLegendGraphic&COLORBARONLY=true&WIDTH=2&HEIGHT=648&LAYER=",prod,"&PALETTE=",wmsStyle,"&FORMAT=image%2Fpng")
       #imageLoc <- './Legends/ANU_Ssoil_Legend.png'
-      
-      tags$img(src = imageLoc)
+      div_style <- paste0("box-sizing: content-box; border: 1px solid black; width: 18px; height: 648px; background-image: url(\'", imageLoc, "\');")
+      div(style=div_style)
     } else {
-      tags$img(src = '')
+      div()
     }
   })
   
@@ -657,7 +657,7 @@ cursor:crosshair;
                                                    
                                                    fluidRow(
                                                      column(12, withSpinner( leafletOutput("moistureMap", height = 650))),
-                                                     absolutePanel(column(1, htmlOutput("wmsLegend")), right=0, height=650)) ,
+                                                     absolutePanel(htmlOutput("wmsLegend"), style="right:-5px; height:650px;")) ,
                                                    fluidRow(column(12, bsAlert("progressAlert"))),
                                                    dygraphOutput("dummyDygraph", height = "0px"), #Dummy dygraph to ensure loading of dygraph libraries at boot time, even when none are shown
                                                    div(style="visibility:hidden;",verbatimTextOutput("showDyGraph")), # Dummy invisible output of showDygraph to ensure its included in the conditional render

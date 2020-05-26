@@ -79,6 +79,15 @@ margin-top: 10px;
 color: red;
 }
 #overlay_transparency_slider.leaflet-control {
-height: 70px;
+height: 60px;
+background-color: rgba(255,255,255,0);
+box-shadow: none;
+}
+#overlay_transparency_slider .irs-slider {
+top: 20px;
+width: 18px;
+height: 18px;
+border-radius: 10px;
+-moz-border-radius: 10px;
 }
 "
