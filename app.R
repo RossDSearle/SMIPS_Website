@@ -154,7 +154,7 @@ server <- function(input, output,session) {
   
   output$moistureMap <- renderLeaflet({
     
-    req(input$ProductType)
+   # req(input$ProductType)
     
     lf <- leaflet() %>% clearMarkers() %>%
       addTiles(group = "Map") %>%
@@ -224,6 +224,8 @@ server <- function(input, output,session) {
   
   ###################### Use a separate observer to recreate wms maps as needed  ######
   observe({
+    
+    req(input$ProductType)
     
     mDate <- input$moistureMapDate
     wmsyear <- paste0( substr(mDate, 1, 4))
